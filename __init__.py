@@ -1,1 +1,1 @@
-__all__ = ["power_law_dist", "imf", "binary_param_generator"]
+__all__ = ["distributions", "imf", "binary_param_generator"]
