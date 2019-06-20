@@ -1,1 +1,1 @@
-__all__ = ["imf", "binary_param_generator"]
+__all__ = ["power_law_dist", "imf", "binary_param_generator"]
