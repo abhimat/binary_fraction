@@ -38,9 +38,10 @@ class power_law_dist(object):
         return cdf
     
     def inv_cdf_u(self, u):
-        temp_var = (u*((self.limit_hi / self.limit_lo)**(1. - self.pl_exp) - 1.) + 1.)
+        temp_var = (u*(self.limit_hi**(1. - self.pl_exp) - self.limit_lo**(1. - self.pl_exp))
+                    + self.limit_lo**(1. - self.pl_exp))
         
-        inv_cdf = self.limit_lo * np.exp(np.log(temp_var) / (1. - self.pl_exp))
+        inv_cdf = np.exp(np.log(temp_var) / (1. - self.pl_exp))
         
         return inv_cdf
             
