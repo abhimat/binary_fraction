@@ -6,10 +6,17 @@
 
 import numpy as np
 import imf
-from distributions import power_law_dist
+from distributions import (power_law_dist, cos_inc_dist)
 
 class binary_parameters(object):
     def  __init__(self):
+        # Make default distributions
+        self.make_imf()
+        self.make_period_dist()
+        self.make_q_dist()
+        self.make_ecc_dist()
+        self.make_inc_dist()
+        
         return
     
     # Functions to define different distributions for binary population
@@ -29,6 +36,9 @@ class binary_parameters(object):
         self.ecc_dist = power_law_dist(limits=ecc_limits, pl_exp=pl_exp)
         return
     
+    def make_inc_dist(self):
+        self.inc_dist = cos_inc_dist()
+    
     # Function to generate binary parameters
     def generate_binary_params(self, print_diagnostics=False):
         ## Primary star mass
@@ -44,6 +54,10 @@ class binary_parameters(object):
         ## Binary eccentricity
         binary_ecc = self.draw_ecc()
         
+        ## Binary inclination
+        binary_inc = self.draw_inc()
+        
+        
         if print_diagnostics:
             out_str = ''
             out_str += 'Mass 1 = {0:.3f} solMass\n'.format(mass_1)
@@ -51,11 +65,12 @@ class binary_parameters(object):
             out_str += 'q = {0:.3f}\n'.format(binary_q)
             out_str += 'P = {0:.3f} days\n'.format(binary_period)
             out_str += 'e = {0:.3f}\n'.format(binary_ecc)
+            out_str += 'i = {0:.3f}\n'.format(binary_inc)
             
             print(out_str)
         
         return (mass_1, mass_2,
-                binary_period, binary_q, binary_ecc)
+                binary_period, binary_q, binary_ecc, binary_inc)
         
     
     # Functions to draw individual parameters from distributions
@@ -63,10 +78,13 @@ class binary_parameters(object):
         return self.imf.draw_imf_mass()
     
     def draw_period(self):
-        return self.period_dist.power_law_draw()
+        return self.period_dist.draw()
     
     def draw_q(self):
-        return self.q_dist.power_law_draw()
+        return self.q_dist.draw()
     
     def draw_ecc(self):
-        return self.ecc_dist.power_law_draw()
+        return self.ecc_dist.draw()
+    
+    def draw_inc(self):
+        return self.inc_dist.draw()
