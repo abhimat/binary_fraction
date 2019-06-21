@@ -4,7 +4,7 @@
 # ---
 # Abhimat Gautam
 
-__all__ = ['power_law_dist']
+__all__ = ['power_law_dist', 'cos_inc_dist']
 
 import numpy as np
 
@@ -48,8 +48,17 @@ class power_law_dist(object):
         return inv_cdf
             
     
-    def power_law_draw(self, rand=-1.):
+    def draw(self, rand=-1.):
         if rand == -1.:
             rand = np.random.rand()
         
         return self.inv_cdf_u(rand)
+
+class cos_inc_dist(object):
+    def __init__(self):
+        return
+    
+    def draw(self):
+        cos_i_draw = (2. * np.random.sample()) - 1.
+        
+        return np.rad2deg(np.arccos(cos_i_draw))
