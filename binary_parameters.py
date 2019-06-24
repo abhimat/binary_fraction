@@ -4,11 +4,12 @@
 # ---
 # Abhimat Gautam
 
+import os
 import numpy as np
 import imf
 from distributions import (power_law_dist, cos_inc_dist)
 
-class binary_parameters(object):
+class binary_population(object):
     def  __init__(self):
         # Make default distributions
         self.make_imf()
@@ -50,6 +51,7 @@ class binary_parameters(object):
         
         ## Binary period
         binary_period = self.draw_period()
+        binary_t0_shift = self.draw_t0_shift(binary_period)
         
         ## Binary eccentricity
         binary_ecc = self.draw_ecc()
@@ -64,13 +66,16 @@ class binary_parameters(object):
             out_str += 'Mass 2 = {0:.3f} solMass\n'.format(mass_2)
             out_str += 'q = {0:.3f}\n'.format(binary_q)
             out_str += 'P = {0:.3f} days\n'.format(binary_period)
+            out_str += 't0 shift = {0:.3f} days\n'.format(binary_t0_shift)
             out_str += 'e = {0:.3f}\n'.format(binary_ecc)
-            out_str += 'i = {0:.3f}\n'.format(binary_inc)
+            out_str += 'i = {0:.3f} deg\n'.format(binary_inc)
             
             print(out_str)
         
+        ## Return a tuple of all the generated binary parameters
         return (mass_1, mass_2,
-                binary_period, binary_q, binary_ecc, binary_inc)
+                binary_period, binary_t0_shift,
+                binary_q, binary_ecc, binary_inc)
         
     
     # Functions to draw individual parameters from distributions
@@ -80,6 +85,9 @@ class binary_parameters(object):
     def draw_period(self):
         return self.period_dist.draw()
     
+    def draw_t0_shift(self, binary_period):
+        return binary_period * np.random.rand()
+    
     def draw_q(self):
         return self.q_dist.draw()
     
@@ -88,3 +96,38 @@ class binary_parameters(object):
     
     def draw_inc(self):
         return self.inc_dist.draw()
+
+
+def generate_binary_population_params(binary_population, num_binaries, out_dir='./mock_binaries'):
+    # Make sure output directory exists
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    
+    # Make a table for output binary parameters
+    num_params = 7
+    
+    binary_pop_params = np.empty([num_binaries, num_params])
+    
+    # Draw binary parameters
+    for cur_binary_index in range(num_binaries):
+        cur_binary_params = binary_population.generate_binary_params()
+        (mass_1, mass_2,
+         binary_period, binary_t0_shift,
+         binary_q, binary_ecc, binary_inc) = cur_binary_params
+        
+        binary_pop_params[cur_binary_index] = [mass_1, mass_2,
+                                               binary_period, binary_t0_shift,
+                                               binary_q, binary_ecc, binary_inc]
+    
+    # Generate astropy table object
+    from astropy.table import Table
+    binary_pop_params_table = Table(binary_pop_params,
+                                    names=('mass_1', 'mass_2',
+                                           'binary_period', 'binary_t0_shift',
+                                           'binary_q', 'binary_ecc', 'binary_inc'))
+    
+    binary_pop_params_table.write('{0}/binary_pop_params.txt'.format(out_dir),
+                                  overwrite=True, format='ascii.fixed_width')
+    
+    return binary_pop_params_table
+    
