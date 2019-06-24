@@ -104,7 +104,7 @@ def generate_binary_population_params(binary_population, num_binaries, out_dir='
         os.makedirs(out_dir)
     
     # Make a table for output binary parameters
-    num_params = 7
+    num_params = 7 + 1
     
     binary_pop_params = np.empty([num_binaries, num_params])
     
@@ -115,14 +115,14 @@ def generate_binary_population_params(binary_population, num_binaries, out_dir='
          binary_period, binary_t0_shift,
          binary_q, binary_ecc, binary_inc) = cur_binary_params
         
-        binary_pop_params[cur_binary_index] = [mass_1, mass_2,
+        binary_pop_params[cur_binary_index] = [cur_binary_index, mass_1, mass_2,
                                                binary_period, binary_t0_shift,
                                                binary_q, binary_ecc, binary_inc]
     
     # Generate astropy table object
     from astropy.table import Table
     binary_pop_params_table = Table(binary_pop_params,
-                                    names=('mass_1', 'mass_2',
+                                    names=('binary_index', 'mass_1', 'mass_2',
                                            'binary_period', 'binary_t0_shift',
                                            'binary_q', 'binary_ecc', 'binary_inc'))
     
