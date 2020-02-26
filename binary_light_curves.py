@@ -15,6 +15,16 @@ from phoebe import c as const
 
 from tqdm import tqdm
 
+# Function to help with parallelization
+def binary_light_curve_from_binary_row(cur_binary_row, bin_pop_lc_obj, out_dir):
+    bin_pop_lc_obj.make_binary_light_curve(cur_binary_row['binary_index'],
+                       cur_binary_row['mass_1'], cur_binary_row['mass_2'],
+                       cur_binary_row['binary_period'], cur_binary_row['binary_t0_shift'],
+                       cur_binary_row['binary_q'], cur_binary_row['binary_ecc'],
+                       cur_binary_row['binary_inc'],
+                       out_dir=out_dir)
+
+# Class for generating light curves in a binary population
 class binary_pop_light_curves(object):
     def  __init__(self):
         # Set up some defaults
@@ -164,19 +174,16 @@ class binary_pop_light_curves(object):
         
         ## Return model magnitudes
         return (binary_model_mags_Kp, binary_model_mags_H)
-        
     
-    def make_binary_population_light_curves(self, binary_pop_params_file, out_dir='./mock_binaries'):
+    def make_binary_population_light_curves(self, binary_pop_params_file, out_dir='./mock_binaries',
+                                            parallelize=True):
+        ## Read in table of binary parameters
         from astropy.table import Table
-        
         binary_pop_params_table = Table.read(binary_pop_params_file, format='ascii.fixed_width')
         
-        for cur_binary_row in tqdm(binary_pop_params_table):
-            self.make_binary_light_curve(cur_binary_row['binary_index'],
-                     cur_binary_row['mass_1'], cur_binary_row['mass_2'],
-                     cur_binary_row['binary_period'], cur_binary_row['binary_t0_shift'],
-                     cur_binary_row['binary_q'], cur_binary_row['binary_ecc'],
-                     cur_binary_row['binary_inc'],
-                     out_dir=out_dir)
+        ## Generate light curves for all binaries
+        import parmap
+        parmap.map(binary_light_curve_from_binary_row, binary_pop_params_table, self, out_dir=out_dir,
+                   pm_pbar=True, pm_parallel=parallelize)
         
         return
