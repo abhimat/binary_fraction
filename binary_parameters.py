@@ -6,8 +6,8 @@
 
 import os
 import numpy as np
-import imf
-from distributions import (power_law_dist, cos_inc_dist)
+from binary_fraction import imf
+from binary_fraction.distributions import (power_law_dist, cos_inc_dist)
 
 class binary_population(object):
     def  __init__(self):
@@ -98,7 +98,9 @@ class binary_population(object):
         return self.inc_dist.draw()
 
 
-def generate_binary_population_params(binary_population, num_binaries, out_dir='./mock_binaries'):
+def generate_binary_population_params(
+        binary_population, num_binaries,
+        out_dir='./mock_binaries'):
     # Make sure output directory exists
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
