@@ -6,7 +6,8 @@
 
 import os
 import numpy as np
-import imf
+from binary_fraction import imf
+from astropy.table import Table
 
 from phoebe_phitter import isoc_interp, lc_calc
 
@@ -36,7 +37,8 @@ class binary_pop_light_curves(object):
     def make_pop_isochrone(self,
                            isoc_age=4.0e6, isoc_ext_Ks=2.54,
                            isoc_dist=7.971e3, isoc_phase=None,
-                           isoc_met=0.0):
+                           isoc_met=0.0,
+                           isoc_atm_func = 'merged'):
         # Store out isochrone parameters into object
         self.isoc_age=isoc_age,
         self.isoc_ext=isoc_ext_Ks,
@@ -50,7 +52,7 @@ class binary_pop_light_curves(object):
                                                         dist=isoc_dist,
                                                         phase=isoc_phase,
                                                         met=isoc_met,
-                                                        use_atm_func='phoenix')
+                                                        use_atm_func=isoc_atm_func)
         
         # Also set population extinction based on isochrone extinction
         ## Filter properties
@@ -128,8 +130,9 @@ class binary_pop_light_curves(object):
                                                               self.isoc_ext,
                                                               self.ext_Kp, self.ext_H,
                                                               self.ext_alpha,
-                                                              self.isoc_dist * u.pc, self.pop_distance,
-                                                              use_blackbody_atm=True,
+                                                              self.isoc_dist * u.pc,
+                                                              self.pop_distance,
+                                                              use_blackbody_atm=False,
                                                               num_triangles=num_triangles)
         except:
             model_success = False
@@ -142,7 +145,6 @@ class binary_pop_light_curves(object):
             os.makedirs(out_dir + '/binary_light_curves')
         
         ## Save out model magnitudes
-        from astropy.table import Table
         if model_success:
             binary_mags_Kp_table = Table([self.obs_times_Kp, binary_model_mags_Kp],
                                          names=('MJD', 'mags_Kp'))
@@ -170,20 +172,19 @@ class binary_pop_light_curves(object):
                                             out_dir + '/binary_light_curves', int(binary_index)),
                                       overwrite=True, format='ascii.fixed_width')
             
-        
-        
         ## Return model magnitudes
         return (binary_model_mags_Kp, binary_model_mags_H)
     
-    def make_binary_population_light_curves(self, binary_pop_params_file, out_dir='./mock_binaries',
+    def make_binary_population_light_curves(self, binary_pop_params_file,
+                                            out_dir='./mock_binaries',
                                             parallelize=True):
         ## Read in table of binary parameters
-        from astropy.table import Table
         binary_pop_params_table = Table.read(binary_pop_params_file, format='ascii.fixed_width')
         
         ## Generate light curves for all binaries
         import parmap
-        parmap.map(binary_light_curve_from_binary_row, binary_pop_params_table, self, out_dir=out_dir,
+        parmap.map(binary_light_curve_from_binary_row, binary_pop_params_table,
+                   self, out_dir=out_dir,
                    pm_pbar=True, pm_parallel=parallelize)
         
         return
