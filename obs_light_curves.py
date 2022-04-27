@@ -310,3 +310,209 @@ class calc_obs_uncs(object):
             fig.savefig(f'{out_dir}/H/epoch_{epoch_id}.png')
             plt.close(fig)
         
+
+class add_obs_uncs(object):
+    """Class for adding obs uncertainties from each observation epoch
+    to binary star model mags
+    """
+    
+    def __init__(self):
+        # Set up defaults
+        
+        return
+    
+    def read_epoch_uncs(self,
+            num_epochs_kp, num_epochs_h,
+            uncs_dir = './obs_uncertainties/',
+        ):
+        """Read in and store mag uncertainties for each epoch
+        """
+        
+        epoch_unc_tables_kp = {}
+        epoch_unc_tables_h = {}
+        
+        # Read in each epoch's uncertainties table
+        for cur_epoch_index in range(num_epochs_kp):
+            cur_epoch_table = Table.read(
+                f'{uncs_dir}/Kp/epoch_{cur_epoch_index}.txt',
+                format='ascii.fixed_width')
+            
+            epoch_unc_tables_kp[cur_epoch_index] = cur_epoch_table
+        
+        for cur_epoch_index in range(num_epochs_h):
+            cur_epoch_table = Table.read(
+                f'{uncs_dir}/H/epoch_{cur_epoch_index}.txt',
+                format='ascii.fixed_width')
+            
+            epoch_unc_tables_h[cur_epoch_index] = cur_epoch_table
+        
+        # Save out variables into object variables
+        self.epoch_unc_tables_kp = epoch_unc_tables_kp
+        self.epoch_unc_tables_h = epoch_unc_tables_h
+        
+        return
+    
+    def apply_mag_uncs(self,
+            model_number,
+            model_lcs_dir = './mock_binaries/model_light_curves/',
+            model_obs_lcs_dir = './mock_binaries/model_obs_light_curves/',
+        ):
+        """Apply obs uncertainties to model magnitudes
+        """
+        
+        # Work on Kp epochs
+        # Read in model magnitudes
+        model_mags_kp_table = Table.read(
+            f'{model_lcs_dir}/binary_{model_number}_mags_Kp.txt',
+            format='ascii.fixed_width')
+        
+        num_epochs_kp = len(model_mags_kp_table)
+        
+        model_mags_kp = model_mags_kp_table['mags_Kp']
+        model_obs_mags_kp = np.empty(num_epochs_kp)
+        model_obs_mag_uncs_kp = np.empty(num_epochs_kp)
+        
+        if num_epochs_kp == 1:
+            return
+        
+        # Step through each observation epoch
+        for cur_epoch_index in range(num_epochs_kp):
+            cur_epoch_model_mag = model_mags_kp[cur_epoch_index]
+            cur_epoch_unc_table = self.epoch_unc_tables_kp[cur_epoch_index]
+            
+            # Apply filter for mags where values are defined
+            finite_filter = np.where(
+                np.isfinite(cur_epoch_unc_table['mag_unc_med'])
+            )
+            cur_epoch_unc_table = cur_epoch_unc_table[finite_filter]
+            
+            
+            interp_unc_med = np.interp(cur_epoch_model_mag,
+                                       cur_epoch_unc_table['mag'],
+                                       cur_epoch_unc_table['mag_unc_med'],
+                                       right=np.nan,
+                                      )
+            
+            interp_unc_mad = np.interp(cur_epoch_model_mag,
+                                       cur_epoch_unc_table['mag'],
+                                       cur_epoch_unc_table['mag_unc_mad'],
+                                       right=np.nan,
+                                      )
+            
+            # Pick a mag uncertainty            
+            cur_epoch_mag_unc = -1
+            # While loop to make sure negative unc doesn't get picked
+            while cur_epoch_mag_unc < 0:
+                cur_epoch_mag_unc = np.random.normal(
+                                        loc=interp_unc_med,
+                                        scale=interp_unc_mad)
+            
+            # Pick an observed mag based on the mag uncertainty
+            cur_epoch_model_obs_mag = np.random.normal(
+                                          loc=cur_epoch_model_mag,
+                                          scale=cur_epoch_mag_unc)
+            
+            # Save out drawn values
+            model_obs_mags_kp[cur_epoch_index] = cur_epoch_model_obs_mag
+            model_obs_mag_uncs_kp[cur_epoch_index] = cur_epoch_mag_unc
+        
+        # Construct and output a new table for the observed model mags
+        model_obs_mags_kp_table = Table({
+            'MJD': model_mags_kp_table['MJD'],
+            'mags_Kp': model_obs_mags_kp,
+            'mag_uncs_Kp': model_obs_mag_uncs_kp,
+        })
+        
+        model_obs_mags_kp_table.write(
+            f'{model_obs_lcs_dir}/binary_{model_number}_mags_Kp.txt',
+            overwrite=True, format='ascii.fixed_width')
+        
+        
+        # Work on H epochs
+        # Read in model magnitudes
+        model_mags_h_table = Table.read(
+            f'{model_lcs_dir}/binary_{model_number}_mags_H.txt',
+            format='ascii.fixed_width')
+        
+        num_epochs_h = len(model_mags_h_table)
+        
+        model_mags_h = model_mags_h_table['mags_H']
+        model_obs_mags_h = np.empty(num_epochs_h)
+        model_obs_mag_uncs_h = np.empty(num_epochs_h)
+        
+        if num_epochs_h == 1:
+            return
+        
+        # Step through each observation epoch
+        for cur_epoch_index in range(num_epochs_h):
+            cur_epoch_model_mag = model_mags_h[cur_epoch_index]
+            cur_epoch_unc_table = self.epoch_unc_tables_h[cur_epoch_index]
+            
+            # Apply filter for mags where values are defined
+            finite_filter = np.where(
+                np.isfinite(cur_epoch_unc_table['mag_unc_med'])
+            )
+            cur_epoch_unc_table = cur_epoch_unc_table[finite_filter]
+            
+            
+            interp_unc_med = np.interp(cur_epoch_model_mag,
+                                       cur_epoch_unc_table['mag'],
+                                       cur_epoch_unc_table['mag_unc_med'],
+                                       right=np.nan,
+                                      )
+            
+            interp_unc_mad = np.interp(cur_epoch_model_mag,
+                                       cur_epoch_unc_table['mag'],
+                                       cur_epoch_unc_table['mag_unc_mad'],
+                                       right=np.nan,
+                                      )
+            
+            # Pick a mag uncertainty            
+            cur_epoch_mag_unc = -1
+            # While loop to make sure negative unc doesn't get picked
+            while cur_epoch_mag_unc < 0:
+                cur_epoch_mag_unc = np.random.normal(
+                                        loc=interp_unc_med,
+                                        scale=interp_unc_mad)
+            
+            # Pick an observed mag based on the mag uncertainty
+            cur_epoch_model_obs_mag = np.random.normal(
+                                          loc=cur_epoch_model_mag,
+                                          scale=cur_epoch_mag_unc)
+            
+            # Save out drawn values
+            model_obs_mags_h[cur_epoch_index] = cur_epoch_model_obs_mag
+            model_obs_mag_uncs_h[cur_epoch_index] = cur_epoch_mag_unc
+        
+        # Construct and output a new table for the observed model mags
+        model_obs_mags_h_table = Table({
+            'MJD': model_mags_h_table['MJD'],
+            'mags_H': model_obs_mags_h,
+            'mag_uncs_H': model_obs_mag_uncs_h,
+        })
+        
+        model_obs_mags_h_table.write(
+            f'{model_obs_lcs_dir}/binary_{model_number}_mags_H.txt',
+            overwrite=True, format='ascii.fixed_width')
+        
+        return
+    
+    def apply_mag_uncs_range(self,
+            model_number_range,
+            model_lcs_dir = './mock_binaries/model_light_curves/',
+            model_obs_lcs_dir = './mock_binaries/model_obs_light_curves/',
+        ):
+        
+        # Make sure output directory exists
+        if not os.path.exists(model_obs_lcs_dir):
+            os.makedirs(model_obs_lcs_dir)
+        
+        # Run function on range
+        for model_number in tqdm(model_number_range):
+            self.apply_mag_uncs(
+                model_number,
+                model_lcs_dir = model_lcs_dir,
+                model_obs_lcs_dir = model_obs_lcs_dir,
+            )
+        
+        return
