@@ -107,6 +107,12 @@ class binary_pop_light_curves(object):
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
         
+        if os.path.exists(
+                '{0}/binary_{1}_mags_Kp.txt'.format(
+                    out_dir + '/model_light_curves', int(binary_index))):
+            return
+            
+        
         # print(binary_index)
         
         # Interpolate stellar parameters from isochrone

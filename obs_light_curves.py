@@ -174,7 +174,8 @@ class calc_obs_uncs(object):
                               overwrite=True, format='ascii.fixed_width')
             
             # Create a mag, mag uncertainty plot for the epoch
-            plt.style.use(['tex_paper', 'ticks_innie'])
+            # plt.style.use(['tex_paper', 'ticks_innie'])
+            plt.style.use(['ticks_innie'])
             
             fig, ax = plt.subplots(figsize=(8,4), tight_layout=True)
             
@@ -272,7 +273,8 @@ class calc_obs_uncs(object):
                               overwrite=True, format='ascii.fixed_width')
             
             # Create a mag, mag uncertainty plot for the epoch
-            plt.style.use(['tex_paper', 'ticks_innie'])
+            # plt.style.use(['tex_paper', 'ticks_innie'])
+            plt.style.use(['ticks_innie'])
             
             fig, ax = plt.subplots(figsize=(8,4), tight_layout=True)
             
