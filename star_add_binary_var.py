@@ -6,7 +6,7 @@ import numpy as np
 from astropy.table import Table
 from gc_photdata import align_dataset
 from binary_fraction.obs_light_curves import add_obs_uncs
-
+import os
 
 class star_add_binary_var(object):
     """
@@ -121,6 +121,17 @@ class star_add_binary_var(object):
             self, star, num_lcs_generate=1,
             model_lcs_dir='./mock_binaries/model_light_curves/'):
         """For a given star, add mock binary var light curves
+        
+        Parameters
+        ----------
+        star : str
+            Name of the star, from the Kp align, that the mock binary light
+            curves are being added to
+        num_lcs_generate : int, default: 1
+            Number of mock light curves to generate for the target star, with
+            mock binary light curves added
+        model_lcs_dir : str, default: './mock_binaries/model_light_curves/'
+            Directory where the mock binary model light curves are stored
         """
         
         # Read in the star's light curves
@@ -145,7 +156,7 @@ class star_add_binary_var(object):
         mock_bins_filt_obs_params = self.binary_obs_params_table[mock_bin_mag_filt]
         mock_bins_filt_inds = mock_bins_filt_obs_params['binary_index']
         
-        while len(mock_bins_filt_inds) == 0:
+        while len(mock_bins_filt_inds) < 10:
             mag_rad = mag_rad + 0.25
             print(f'Increasing mag rad size to {mag_rad}')
         
@@ -245,6 +256,9 @@ class star_add_binary_var(object):
                     star_mock_light_curves_kp[
                         cur_mock_index,
                         cur_epoch_index] = np.nan
+                    star_mock_light_curves_kp_uncs[
+                        cur_mock_index,
+                        cur_epoch_index] = np.nan
                     continue
                 
                 # Otherwise read in mock mag and uncs for this observation date
@@ -314,6 +328,9 @@ class star_add_binary_var(object):
                     star_mock_light_curves_h[
                         cur_mock_index,
                         cur_epoch_index] = np.nan
+                    star_mock_light_curves_h_uncs[
+                        cur_mock_index,
+                        cur_epoch_index] = np.nan
                     continue
                 
                 # Otherwise read in mock mag and uncs for this observation date
@@ -364,9 +381,80 @@ class star_add_binary_var(object):
         
         
         # Return star lc + mock values
-        return (star_mock_light_curves_kp,
+        return (selected_bin_inds,
+                star_mock_light_curves_kp,
                 star_mock_light_curves_kp_uncs,
                 star_mock_light_curves_h,
                 star_mock_light_curves_h_uncs,
                )
-
+    
+    def create_star_binary_var_table(
+            self, star, num_lcs_generate=1,
+            model_lcs_dir='./mock_binaries/model_light_curves/',
+            star_bin_var_out_dir='./star_bin_var/',
+            print_diagnostics=False):
+        """
+        Function to create a table of mock light curves for the target star
+        
+        Parameters
+        ----------
+        star : str
+            Name of the star, from the Kp align, that the mock binary light
+            curves are being added to
+        num_lcs_generate : int, default: 1
+            Number of mock light curves to generate for the target star, with
+            mock binary light curves added
+        model_lcs_dir : str, default: './mock_binaries/model_light_curves/'
+            Directory where the mock binary model light curves are stored
+        star_bin_var_out_dir : str, default: './star_bin_var/'
+            Directory where the output tables live for each star,
+            with mock binary light curves injected
+        print_diagnostics : bool, default: False
+            Specify if to print diagnostics during run
+        """
+        
+        # Make sure output directory exists
+        if not os.path.exists(star_bin_var_out_dir):
+            os.makedirs(star_bin_var_out_dir)
+        
+        # Generate the mock light curves
+        star_lc_add_binary_var_out = self.star_lc_add_binary_var(
+            star, num_lcs_generate=num_lcs_generate,
+            model_lcs_dir=model_lcs_dir)
+        
+        (selected_bin_ids,
+         star_mock_light_curves_kp,
+         star_mock_light_curves_kp_uncs,
+         star_mock_light_curves_h,
+         star_mock_light_curves_h_uncs,
+        ) = star_lc_add_binary_var_out
+        
+        # Create output table
+        star_bin_var_ids = list(range(num_lcs_generate))
+        
+        star_table = Table([star_bin_var_ids,
+                            selected_bin_ids,
+                            star_mock_light_curves_kp,
+                            star_mock_light_curves_kp_uncs,
+                            star_mock_light_curves_h,
+                            star_mock_light_curves_h_uncs,
+                           ],
+                           names=('star_bin_var_ids',
+                                  'selected_bin_ids,',
+                                  'mag_kp',
+                                  'mag_unc_kp',
+                                  'mag_h',
+                                  'mag_unc_h',
+                                 )
+                          )
+        star_table.add_index('star_bin_var_ids')
+        
+        # Write out the output table
+        star_table.write(f'{star_bin_var_out_dir}/{star}.h5',
+                         path='data', serialize_meta=True, compression=True,
+                         overwrite=True)
+        
+        if print_diagnostics:
+            print(star_table)
+        
+        return star_table
