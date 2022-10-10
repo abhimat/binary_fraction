@@ -440,7 +440,7 @@ class star_add_binary_var(object):
                             star_mock_light_curves_h_uncs,
                            ],
                            names=('star_bin_var_ids',
-                                  'selected_bin_ids,',
+                                  'selected_bin_ids',
                                   'mag_kp',
                                   'mag_unc_kp',
                                   'mag_h',
