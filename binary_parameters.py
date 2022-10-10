@@ -6,6 +6,7 @@
 
 import os
 import numpy as np
+from astropy.table import Table
 from binary_fraction import imf
 from binary_fraction.distributions import (power_law_dist, cos_inc_dist)
 
@@ -106,7 +107,7 @@ def generate_binary_population_params(
         os.makedirs(out_dir)
     
     # Make a table for output binary parameters
-    num_params = 7 + 1
+    num_params = 7
     
     binary_pop_params = np.empty([num_binaries, num_params])
     
@@ -117,16 +118,29 @@ def generate_binary_population_params(
          binary_period, binary_t0_shift,
          binary_q, binary_ecc, binary_inc) = cur_binary_params
         
-        binary_pop_params[cur_binary_index] = [cur_binary_index, mass_1, mass_2,
+        binary_pop_params[cur_binary_index] = [mass_1, mass_2,
                                                binary_period, binary_t0_shift,
                                                binary_q, binary_ecc, binary_inc]
     
     # Generate astropy table object
-    from astropy.table import Table
-    binary_pop_params_table = Table(binary_pop_params,
+    binary_pop_params_table = Table([np.arange(num_binaries, dtype=int),
+                                     binary_pop_params[:,0],
+                                     binary_pop_params[:,1],
+                                     binary_pop_params[:,2],
+                                     binary_pop_params[:,3],
+                                     binary_pop_params[:,4],
+                                     binary_pop_params[:,5],
+                                     binary_pop_params[:,6],
+                                    ],
                                     names=('binary_index', 'mass_1', 'mass_2',
                                            'binary_period', 'binary_t0_shift',
                                            'binary_q', 'binary_ecc', 'binary_inc'))
+    
+    binary_pop_params_table.write(
+        '{0}/binary_pop_params.h5'.format(out_dir),
+        path='data', serialize_meta=True, compression=True,
+        overwrite=True,
+    )
     
     binary_pop_params_table.write('{0}/binary_pop_params.txt'.format(out_dir),
                                   overwrite=True, format='ascii.fixed_width')

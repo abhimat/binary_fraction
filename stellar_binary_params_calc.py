@@ -231,7 +231,10 @@ class stellar_binary_params_calc(object):
 
 
         # Make parameter table for output
-        params_table = Table([range(num_binaries),
+        
+        np.arange
+        
+        params_table = Table([np.arange(num_binaries, dtype=int),
                               star1_mass_init_samps, star1_mass_samps,
                               star1_rad_samps, star1_den_samps,
                               star1_lum_samps, star1_teff_samps,
@@ -259,8 +262,8 @@ class stellar_binary_params_calc(object):
                                     'binary_sma', 'binary_mass_func',
                                    ),
                             )
-
-
+        
+        
         params_table.write('stellar_binary_params.h5', path='data',
                            serialize_meta=True, compression=True,
                            overwrite=True)
