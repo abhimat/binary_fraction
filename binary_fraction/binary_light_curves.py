@@ -8,25 +8,27 @@ import os
 import numpy as np
 from binary_fraction import imf
 from astropy.table import Table
-
-from phoebe_phitter import isoc_interp, lc_calc
-
+from phitter import isoc_interp, lc_calc
 from phoebe import u
 from phoebe import c as const
-
+import parmap
 from tqdm import tqdm
 
 # Function to help with parallelization
-def binary_light_curve_from_binary_row(cur_binary_row, bin_pop_lc_obj,
-                                       use_blackbody_atm,
-                                       out_dir):
-    bin_pop_lc_obj.make_binary_light_curve(cur_binary_row['binary_index'],
-                       cur_binary_row['mass_1'], cur_binary_row['mass_2'],
-                       cur_binary_row['binary_period'], cur_binary_row['binary_t0_shift'],
-                       cur_binary_row['binary_q'], cur_binary_row['binary_ecc'],
-                       cur_binary_row['binary_inc'],
-                       use_blackbody_atm=use_blackbody_atm,
-                       out_dir=out_dir)
+def binary_light_curve_from_binary_row(
+        cur_binary_row, bin_pop_lc_obj,
+        out_dir,
+        use_blackbody_atm=False,
+    ):
+    bin_pop_lc_obj.make_binary_light_curve(
+        cur_binary_row['binary_index'],
+        cur_binary_row['mass_1'], cur_binary_row['mass_2'],
+        cur_binary_row['binary_period'], cur_binary_row['binary_t0_shift'],
+        cur_binary_row['binary_q'], cur_binary_row['binary_ecc'],
+        cur_binary_row['binary_inc'],
+        use_blackbody_atm=use_blackbody_atm,
+        out_dir=out_dir,
+    )
 
 # Class for generating light curves in a binary population
 class binary_pop_light_curves(object):
@@ -98,11 +100,14 @@ class binary_pop_light_curves(object):
     def set_pop_distance(self, pop_distance=7.971e3):
         self.pop_distance = pop_distance
     
-    def make_binary_light_curve(self, binary_index, mass_1, mass_2,
-                                binary_period, binary_t0_shift,
-                                binary_q, binary_ecc, binary_inc,
-                                use_blackbody_atm=False,
-                                out_dir='./mock_binaries'):
+    def make_binary_light_curve(
+            self, binary_index, mass_1, mass_2,
+            binary_period, binary_t0_shift,
+            binary_q, binary_ecc, binary_inc,
+            use_blackbody_atm=False,
+            out_dir='./mock_binaries',
+            num_phase_points=100,
+        ):
         # Make sure output directory exists
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
@@ -111,29 +116,41 @@ class binary_pop_light_curves(object):
                 '{0}/binary_{1}_mags_Kp.txt'.format(
                     out_dir + '/model_light_curves', int(binary_index))):
             return
-            
+
         
         # print(binary_index)
         
         # Interpolate stellar parameters from isochrone
-        (star1_params_all, star1_params_lcfit) = self.pop_isochrone.mass_init_interp(mass_1)
-        (star2_params_all, star2_params_lcfit) = self.pop_isochrone.mass_init_interp(mass_2)
+        (star1_params_all,
+         star1_params_lcfit) = self.pop_isochrone.mass_init_interp(mass_1)
+        (star2_params_all,
+         star2_params_lcfit) = self.pop_isochrone.mass_init_interp(mass_2)
         
         # Set up binary parameters
         binary_inc = binary_inc * u.deg
         t0 = (np.min(self.obs_times_Kp) - binary_period + binary_t0_shift)
-
+        
         binary_params_model = (binary_period * u.d, binary_ecc, binary_inc, t0)
         binary_params = (binary_period * u.d, binary_ecc, binary_inc, t0)
         
         # Set up model times
-        model_times = (self.obs_times_Kp, self.obs_times_H)
+        model_phases_Kp = np.linspace(0.0, 1.0,
+                                      num=num_phase_points,
+                                      endpoint=False)
+        model_phases_H = np.linspace(0.0, 1.0,
+                                     num=num_phase_points,
+                                     endpoint=False)
+        
+        model_times_Kp = (model_phases_Kp * binary_period)
+        model_times_H = (model_phases_H * binary_period)
+        
+        model_times = (model_times_Kp, model_times_H)
         
         # Obtain model magnitudes
         model_success = True
         
-        binary_model_mags_Kp = np.empty(len(self.obs_times_Kp))
-        binary_model_mags_H = np.empty(len(self.obs_times_H))
+        binary_model_mags_Kp = np.empty(num_phase_points)
+        binary_model_mags_H = np.empty(num_phase_points)
         
         num_triangles = 500
         binary_model_out = lc_calc.binary_mags_calc(
@@ -153,22 +170,8 @@ class binary_pop_light_curves(object):
             model_success = False
             (binary_model_mags_Kp, binary_model_mags_H) = ([-1], [-1])
         else:
-            (binary_model_out_Kp, binary_model_out_H) = binary_model_out
+            (binary_model_mags_Kp, binary_model_mags_H) = binary_model_out
             
-            # Calculate model time phasing
-            (kp_phase_out, h_phase_out) = lc_calc.phased_obs(
-                                              model_times,
-                                              binary_period * u.d, t0)
-    
-            (kp_phased_days, kp_phases_sorted_inds,
-             kp_model_times) = kp_phase_out
-            (h_phased_days, h_phases_sorted_inds,
-             h_model_times) = h_phase_out
-        
-            # Place output model mags into correctly phased slots for mags
-            binary_model_mags_Kp[kp_phases_sorted_inds] = binary_model_out_Kp
-            binary_model_mags_H[h_phases_sorted_inds] = binary_model_out_H
-                
         
         # Save out binary light curve
         ## Make sure output directory exists
@@ -177,47 +180,107 @@ class binary_pop_light_curves(object):
         
         ## Save out model magnitudes
         if model_success:
-            binary_mags_Kp_table = Table([self.obs_times_Kp, binary_model_mags_Kp],
-                                         names=('MJD', 'mags_Kp'))
-            binary_mags_H_table = Table([self.obs_times_H, binary_model_mags_H],
-                                        names=('MJD', 'mags_H'))
+            binary_mags_Kp_table = Table(
+                [model_phases_Kp, model_times_Kp, binary_model_mags_Kp],
+                names=('model_phases_Kp', 'model_times_Kp', 'mags_Kp'),
+            )
+            binary_mags_H_table = Table(
+                [model_phases_H, model_times_H, binary_model_mags_H],
+                names=('model_phases_H', 'model_times_H', 'mags_H'),
+            )
+            
+            binary_mags_Kp_table['model_phases_Kp'].info.format = '.2f'
+            binary_mags_H_table['model_phases_H'].info.format = '.2f'
+            
+            binary_mags_Kp_table['model_times_Kp'].info.format = '.3f'
+            binary_mags_H_table['model_times_H'].info.format = '.3f'
             
             binary_mags_Kp_table['mags_Kp'].info.format = '.6f'
             binary_mags_H_table['mags_H'].info.format = '.6f'
             
-            binary_mags_Kp_table.write('{0}/binary_{1}_mags_Kp.txt'.format(
-                                            out_dir + '/model_light_curves', int(binary_index)),
-                                       overwrite=True, format='ascii.fixed_width')
+            binary_mags_Kp_table.write(
+                '{0}/binary_{1}_mags_Kp.txt'.format(
+                    out_dir + '/model_light_curves', int(binary_index)),
+                overwrite=True, format='ascii.fixed_width',
+            )
             
-            binary_mags_H_table.write('{0}/binary_{1}_mags_H.txt'.format(
-                                            out_dir + '/model_light_curves', int(binary_index)),
-                                      overwrite=True, format='ascii.fixed_width')
+            binary_mags_Kp_table.write(
+                '{0}/binary_{1}_mags_Kp.h5'.format(
+                    out_dir + '/model_light_curves', int(binary_index)),
+                path='data', serialize_meta=True, compression=True,
+                overwrite=True,
+            )
+            
+            binary_mags_H_table.write(
+                '{0}/binary_{1}_mags_H.txt'.format(
+                    out_dir + '/model_light_curves', int(binary_index)),
+                overwrite=True, format='ascii.fixed_width',
+            )
+            
+            binary_mags_H_table.write(
+                '{0}/binary_{1}_mags_H.h5'.format(
+                    out_dir + '/model_light_curves', int(binary_index)),
+                path='data', serialize_meta=True, compression=True,
+                overwrite=True,
+            )
+            
         else:
-            binary_mags_Kp_table = Table([[-1], binary_model_mags_Kp],
-                                         names=('MJD', 'mags_Kp'))
-            binary_mags_H_table = Table([[-1], binary_model_mags_H],
-                                        names=('MJD', 'mags_H'))
-        
-            binary_mags_Kp_table.write('{0}/binary_{1}_mags_Kp.txt'.format(
-                                            out_dir + '/model_light_curves', int(binary_index)),
-                                       overwrite=True, format='ascii.fixed_width')
-        
-            binary_mags_H_table.write('{0}/binary_{1}_mags_H.txt'.format(
-                                            out_dir + '/model_light_curves', int(binary_index)),
-                                      overwrite=True, format='ascii.fixed_width')
+            binary_mags_Kp_table = Table(
+                [[-1], [-1], binary_model_mags_Kp],
+                names=('model_phases_Kp', 'model_times_Kp', 'mags_Kp'),
+            )
+            binary_mags_H_table = Table(
+                [[-1], [-1], binary_model_mags_H],
+                names=('model_phases_H', 'model_times_H', 'mags_H'),
+            )
             
+            binary_mags_Kp_table.write(
+                '{0}/binary_{1}_mags_Kp.txt'.format(
+                    out_dir + '/model_light_curves', int(binary_index)),
+                overwrite=True, format='ascii.fixed_width',
+            )
+            
+            binary_mags_Kp_table.write(
+                '{0}/binary_{1}_mags_Kp.h5'.format(
+                    out_dir + '/model_light_curves', int(binary_index)),
+                path='data', serialize_meta=True, compression=True,
+                overwrite=True,
+            )
+            
+            binary_mags_H_table.write(
+                '{0}/binary_{1}_mags_H.txt'.format(
+                    out_dir + '/model_light_curves', int(binary_index)),
+                overwrite=True, format='ascii.fixed_width',
+            )
+            
+            binary_mags_H_table.write(
+                '{0}/binary_{1}_mags_H.h5'.format(
+                    out_dir + '/model_light_curves', int(binary_index)),
+                path='data', serialize_meta=True, compression=True,
+                overwrite=True,
+            )
+        
         ## Return model magnitudes
         return (binary_model_mags_Kp, binary_model_mags_H)
     
-    def make_binary_population_light_curves(self, binary_pop_params_file,
-                                            use_blackbody_atm=False,
-                                            out_dir='./mock_binaries',
-                                            parallelize=True):
+    def make_binary_population_light_curves(
+            self, binary_pop_params_file,
+            use_blackbody_atm=False,
+            out_dir='./mock_binaries',
+            parallelize=True):
         ## Read in table of binary parameters
-        binary_pop_params_table = Table.read(binary_pop_params_file, format='ascii.fixed_width')
+        if binary_pop_params_file.endswith('.h5'):
+            binary_pop_params_table = Table.read(
+                binary_pop_params_file,
+                path='data',
+            )
+        elif binary_pop_params_file.endswith('.txt'):
+            binary_pop_params_table = Table.read(
+                binary_pop_params_file,
+                format='ascii.fixed_width',
+            )
         
         ## Generate light curves for all binaries
-        import parmap
         parmap.map(binary_light_curve_from_binary_row, binary_pop_params_table,
                    self, use_blackbody_atm=use_blackbody_atm, out_dir=out_dir,
                    pm_pbar=True, pm_parallel=parallelize)
