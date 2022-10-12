@@ -8,7 +8,7 @@ import os
 import numpy as np
 from binary_fraction import imf
 from astropy.table import Table
-from phoebe_phitter import isoc_interp, lc_calc
+from phitter import isoc_interp, lc_calc
 from phoebe import u
 from phoebe import c as const
 import parmap
