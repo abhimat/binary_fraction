@@ -268,7 +268,7 @@ class binary_pop_light_curves(object):
             use_blackbody_atm=False,
             out_dir='./mock_binaries',
             parallelize=True):
-        ## Read in table of binary parameters
+        # Read in table of binary parameters
         if binary_pop_params_file.endswith('.h5'):
             binary_pop_params_table = Table.read(
                 binary_pop_params_file,
