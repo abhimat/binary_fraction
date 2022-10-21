@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Class to generate observed binary light curves from model light curves
 # ---
 # Abhimat Gautam
@@ -314,7 +312,8 @@ class calc_obs_uncs(object):
         
 
 class add_obs_uncs(object):
-    """Class for adding obs uncertainties from each observation epoch
+    """
+    Class for adding obs uncertainties from each observation epoch
     to binary star model mags
     """
     
