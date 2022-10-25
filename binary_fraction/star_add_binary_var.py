@@ -150,25 +150,25 @@ class star_add_binary_var(object):
         return
     
     
-    def draw_bin_mags(self,model_number, phase_shift,
+    def draw_bin_mags(self, model_index, phase_shift,
             print_diagnostics=False,
         ):
         """
-        For a model binary of index {model_number}, sample the model light curve
+        For a model binary of index {model_index}, sample the model light curve
         at this experiment's observation dates.
         """
         # Retrieve relevant information about binary model
-        bin_sb_row = self.model_sb_params_table.loc[model_number]
+        bin_sb_row = self.model_sb_params_table.loc[model_index]
         
         binary_period = bin_sb_row['binary_period']
         
         # Read in the model
         model_mags_kp_table = Table.read(
-            f'{self.model_lcs_dir}/binary_{model_number}_mags_Kp.h5',
+            f'{self.model_lcs_dir}/binary_{model_index}_mags_Kp.h5',
             path='data')
         
         model_mags_h_table = Table.read(
-            f'{self.model_lcs_dir}/binary_{model_number}_mags_H.h5',
+            f'{self.model_lcs_dir}/binary_{model_index}_mags_H.h5',
             path='data')
         
         # Shift the model phases by the phase shift var
@@ -322,38 +322,24 @@ class star_add_binary_var(object):
                                   )
         sel_mock_mean_mags_h = np.empty(num_lcs_generate)
         
-        for (cur_bin_ind, model_number) in enumerate(selected_bin_inds):
-            # Read in and store mock light curves
-            # Kp
+        for (cur_trial_ind, model_ind) in enumerate(selected_bin_inds):
+            # Draw light curves with the current trial phase shift
             
-            draw_bin_mags(
-                model_number, selected_bin_phase_shifts[cur_bin_ind],
+            (bin_obs_mags_draw_kp,
+             bin_obs_mags_draw_h) = self.draw_bin_mags(
+                model_ind, selected_bin_phase_shifts[cur_trial_ind],
             )
             
-            
+            # Read in mod_lc row for binary
+            mod_lc_params_row = self.model_lc_params_table.loc[model_ind]
             
             # Subtract median from light curves and store
+            sel_mock_light_curves_kp[cur_trial_ind] =\
+                bin_obs_mags_draw_kp - mod_lc_params_row['med_mag_kp']
             
-            # sel_mock_light_curves_kp[cur_bin_ind] =\
-            #     model_mags_kp_table['mags_Kp']
-            #
-            # sel_mock_mean_mags_kp[cur_bin_ind] =\
-            #     np.mean(sel_mock_light_curves_kp[cur_bin_ind])
-            #
-            # sel_mock_light_curves_kp[cur_bin_ind] =\
-            #     sel_mock_light_curves_kp[cur_bin_ind] -\
-            #     sel_mock_mean_mags_kp[cur_bin_ind]
+            sel_mock_light_curves_h[cur_trial_ind] =\
+                bin_obs_mags_draw_h - mod_lc_params_row['med_mag_h']
             
-            
-            # sel_mock_light_curves_h[cur_bin_ind] =\
-            #     model_mags_h_table['mags_H']
-            #
-            # sel_mock_mean_mags_h[cur_bin_ind] =\
-            #     np.mean(sel_mock_light_curves_h[cur_bin_ind])
-            #
-            # sel_mock_light_curves_h[cur_bin_ind] =\
-            #     sel_mock_light_curves_h[cur_bin_ind] -\
-            #     sel_mock_mean_mags_h[cur_bin_ind]
         
         # Make mock light curves, with star lc + model mags
         
@@ -368,7 +354,7 @@ class star_add_binary_var(object):
                                          )
         
         # Step through each mock binary, and then each epoch
-        for cur_mock_index in range(num_lcs_generate):
+        for cur_trial_index in range(num_lcs_generate):
             for cur_epoch_index in range(self.num_nights_kp):
                 cur_star_mag = star_mags_kp[cur_epoch_index]
                 cur_star_mag_unc = star_mag_uncs_kp[cur_epoch_index]
@@ -376,16 +362,16 @@ class star_add_binary_var(object):
                 # If star not detected on this date, continue
                 if cur_star_mag < 0:
                     star_mock_light_curves_kp[
-                        cur_mock_index,
+                        cur_trial_index,
                         cur_epoch_index] = np.nan
                     star_mock_light_curves_kp_uncs[
-                        cur_mock_index,
+                        cur_trial_index,
                         cur_epoch_index] = np.nan
                     continue
                 
                 # Otherwise read in mock mag and uncs for this observation date
                 cur_epoch_model_mag = sel_mock_light_curves_kp[
-                                          cur_mock_index,
+                                          cur_trial_index,
                                           cur_epoch_index]
                 cur_epoch_unc_table = self.epoch_unc_tables_kp[cur_epoch_index]
 
@@ -422,11 +408,11 @@ class star_add_binary_var(object):
 
                 # Save out drawn values
                 star_mock_light_curves_kp[
-                    cur_mock_index,
+                    cur_trial_index,
                     cur_epoch_index] = cur_star_mag + cur_epoch_model_obs_mag
                 
                 star_mock_light_curves_kp_uncs[
-                    cur_mock_index,
+                    cur_trial_index,
                     cur_epoch_index] = cur_star_mag_unc
         
         # H
@@ -440,7 +426,7 @@ class star_add_binary_var(object):
                                          )
         
         # Step through each mock binary, and then each epoch
-        for cur_mock_index in range(num_lcs_generate):
+        for cur_trial_index in range(num_lcs_generate):
             for cur_epoch_index in range(self.num_nights_h):
                 cur_star_mag = star_mags_h[cur_epoch_index]
                 cur_star_mag_unc = star_mag_uncs_h[cur_epoch_index]
@@ -448,16 +434,16 @@ class star_add_binary_var(object):
                 # If star not detected on this date, continue
                 if cur_star_mag < 0:
                     star_mock_light_curves_h[
-                        cur_mock_index,
+                        cur_trial_index,
                         cur_epoch_index] = np.nan
                     star_mock_light_curves_h_uncs[
-                        cur_mock_index,
+                        cur_trial_index,
                         cur_epoch_index] = np.nan
                     continue
                 
                 # Otherwise read in mock mag and uncs for this observation date
                 cur_epoch_model_mag = sel_mock_light_curves_h[
-                                          cur_mock_index,
+                                          cur_trial_index,
                                           cur_epoch_index]
                 cur_epoch_unc_table = self.epoch_unc_tables_h[cur_epoch_index]
 
@@ -494,11 +480,11 @@ class star_add_binary_var(object):
 
                 # Save out drawn values
                 star_mock_light_curves_h[
-                    cur_mock_index,
+                    cur_trial_index,
                     cur_epoch_index] = cur_star_mag + cur_epoch_model_obs_mag
                 
                 star_mock_light_curves_h_uncs[
-                    cur_mock_index,
+                    cur_trial_index,
                     cur_epoch_index] = cur_star_mag_unc
         
         
