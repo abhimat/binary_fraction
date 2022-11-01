@@ -5,6 +5,8 @@
 import numpy as np
 from astropy.table import Table
 from gc_photdata import align_dataset
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 import os
 
 class star_add_binary_var(object):
@@ -565,3 +567,187 @@ class star_add_binary_var(object):
             print(star_table)
         
         return star_table
+    
+    def plot_star_binary_var_table(
+            self, star,
+            star_bin_var_out_dir='../star_bin_var/',
+            print_diagnostics=False):
+        """
+        Function to plot light curves injected with binarity for the target star
+        
+        Parameters
+        ----------
+        star : str
+            Name of the star, from the Kp align, that the mock binary light
+            curves are being added to
+        star_bin_var_out_dir : str, default: './star_bin_var/'
+            Directory where the output tables live for each star,
+            with mock binary light curves injected
+        print_diagnostics : bool, default: False
+            Specify if to print diagnostics during run
+        """
+        
+        # Make sure output directory exists
+        if not os.path.exists(star_bin_var_out_dir):
+            print('Directory with binary var light curves does not exist.')
+            print(f'star_bin_var_out_dir = {star_bin_var_out_dir}')
+            return
+        
+        # Read in table of binary var light curves
+        star_table = Table.read(
+            f'{star_bin_var_out_dir}/{star}.h5', path='data',
+        ) 
+        
+        # Set up indexes and determine the total number of light curves
+        star_table.add_index('star_bin_var_ids')
+        num_lcs_generate = len(star_table)
+        
+        if print_diagnostics:
+            print(star_table)
+            print(star_table.loc[1])
+        
+        
+        # Read in the star's observed light curves
+        star_mags_kp = self.mags_kp[star]
+        star_mag_uncs_kp = self.mag_uncs_kp[star]
+        star_mag_mean_kp = self.mag_means_kp[star]
+        
+        star_mags_h = self.mags_h[star]
+        star_mag_uncs_h = self.mag_uncs_h[star]
+        star_mag_mean_h = self.mag_means_h[star]
+        
+        # Calculate median magnitude
+        star_det_filt_kp = np.where(star_mags_kp > 0.)
+        star_det_filt_h = np.where(star_mags_h > 0.)
+        
+        star_mag_med_kp = np.median(star_mags_kp[star_det_filt_kp])
+        star_mag_med_h = np.median(star_mags_h[star_det_filt_h])
+        
+        # Cut out observation dates
+        star_epoch_dates_kp = self.epoch_dates_kp[star_det_filt_kp]
+        star_epoch_dates_h = self.epoch_dates_h[star_det_filt_h]
+        
+        time_xlims = [np.floor(np.min(star_epoch_dates_kp)),
+                      np.ceil(np.max(star_epoch_dates_kp))]
+        
+        
+        # Set up for drawing the plot
+        plt.style.use(['ticks_outtie', 'tex_paper'])
+        
+        fig = plt.figure(figsize=(35, 15))
+        
+        # Set up main grid (overall light curve + space for all injected)
+        grid_main = fig.add_gridspec(
+            nrows=2, ncols=9)
+        
+        # Overall observation light curve (Kp)
+        ax_obs_kp = fig.add_subplot(grid_main[0, 0:3])
+        
+        # ax_obs_kp.set_xlabel(r"Observation Time")
+        ax_obs_kp.set_ylabel(r"$m_{K'}$")
+        
+        ax_obs_kp.errorbar(
+            star_epoch_dates_kp, star_mags_kp, yerr=star_mag_uncs_kp,
+            fmt='.', color='C1')
+        
+        ax_obs_kp.set_xlim(time_xlims)
+        
+        x_majorLocator = MultipleLocator(2.0)
+        x_minorLocator = MultipleLocator(0.5)
+        ax_obs_kp.xaxis.set_major_locator(x_majorLocator)
+        ax_obs_kp.xaxis.set_minor_locator(x_minorLocator)
+        
+        # Overall observation light curve (H)
+        ax_obs_h = fig.add_subplot(grid_main[1, 0:3])
+        
+        ax_obs_h.set_xlabel(r"Observation Time")
+        ax_obs_h.set_ylabel(r"$m_{H}$")
+        
+        ax_obs_h.errorbar(
+            star_epoch_dates_h, star_mags_h, yerr=star_mag_uncs_h,
+            fmt='.', color='C0')
+        
+        ax_obs_h.set_xlim(time_xlims)
+        
+        x_majorLocator = MultipleLocator(2.0)
+        x_minorLocator = MultipleLocator(0.5)
+        ax_obs_h.xaxis.set_major_locator(x_majorLocator)
+        ax_obs_h.xaxis.set_minor_locator(x_minorLocator)
+        
+        # Create a 5x10 grid for the injected light curve plots
+        grid_inj = grid_main[:, 3:].subgridspec(
+            nrows=10, ncols=5)
+        
+        # Go through each injected light curve
+        for sbv_index in star_table['star_bin_var_ids']:
+            # Extract SBV row for the current injection
+            sbv_row = star_table.loc[sbv_index]
+            
+            sb_params_row = self.model_sb_params_table.loc[
+                sbv_row['selected_bin_ids']
+            ]
+            
+            sbv_period = sb_params_row['binary_period']
+            
+            # Phase data to binary period
+            sbv_phases_kp = ((self.epoch_MJDs_kp - self.t0) % sbv_period) / sbv_period
+            sbv_phases_h = ((self.epoch_MJDs_h - self.t0) % sbv_period) / sbv_period
+            
+            print(sbv_phases_kp)
+            print(sbv_phases_h)
+            
+            # Set up a final gridspec for the injected star's light curves
+            grid_sbv = grid_inj[sbv_index].subgridspec(nrows=2, ncols=2)
+            
+            axs_sbv = grid_sbv.subplots()
+            
+            # Time plots
+            ax_kp = axs_sbv[0,0]
+            ax_kp.errorbar(
+                self.epoch_dates_kp, sbv_row['mag_kp'],
+                yerr=sbv_row['mag_unc_kp'],
+                fmt='.', color='C1',
+            )
+            
+            ax_kp.set_xlim(time_xlims)
+            
+            ax_h = axs_sbv[1,0]
+            ax_h.errorbar(
+                self.epoch_dates_h, sbv_row['mag_h'],
+                yerr=sbv_row['mag_unc_h'],
+                fmt='.', color='C0',
+            )
+            
+            ax_h.set_xlim(time_xlims)
+            
+            # Phase plots
+            ax_ph_kp = axs_sbv[0,1]
+            ax_ph_kp.errorbar(
+                sbv_phases_kp, sbv_row['mag_kp'],
+                yerr=sbv_row['mag_unc_kp'],
+                fmt='.', color='C1',
+            )
+            
+            ax_ph_kp.set_xlim([-0.5, 1.5])
+            
+            ax_ph_h = axs_sbv[1,1]
+            ax_ph_h.errorbar(
+                sbv_phases_h, sbv_row['mag_h'],
+                yerr=sbv_row['mag_unc_h'],
+                fmt='.', color='C0',
+            )
+            
+            ax_ph_h.set_xlim([-0.5, 1.5])
+            
+            
+        
+        
+        # Save out final plot
+        
+        fig.tight_layout()
+        fig.savefig(star + '.pdf')
+        fig.savefig(star + '.png', dpi=200)
+        plt.close(fig)
+        
+        
+        return
