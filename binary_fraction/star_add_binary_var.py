@@ -201,8 +201,10 @@ class star_add_binary_var(object):
         # Draw model mags at observation times
         
         # Calculate the observation times' phases
-        obs_phases_kp = (self.epoch_MJDs_kp - self.t0) % binary_period
-        obs_phases_h = (self.epoch_MJDs_h - self.t0) % binary_period
+        obs_phases_kp = ((self.epoch_MJDs_kp - self.t0) % binary_period) /  \
+            binary_period
+        obs_phases_h = ((self.epoch_MJDs_h - self.t0) % binary_period) /    \
+            binary_period
         
         # Interpolate the light curves at the observation's phases
         # from the model
