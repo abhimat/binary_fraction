@@ -630,6 +630,22 @@ class star_add_binary_var(object):
         time_xlims = [np.floor(np.min(star_epoch_dates_kp)),
                       np.ceil(np.max(star_epoch_dates_kp))]
         
+        # Determine y (mag) limits
+        mag_max_kp = np.max(star_table['mag_kp'])
+        mag_min_kp = np.min(star_table['mag_kp'])
+        
+        mag_range_kp = mag_max_kp - mag_min_kp
+        mag_buff_kp = 0.1 * mag_range_kp
+        
+        mag_lims_kp = [mag_max_kp + mag_buff_kp, mag_min_kp - mag_buff_kp]
+        
+        mag_max_h = np.max(star_table['mag_h'])
+        mag_min_h = np.min(star_table['mag_h'])
+        
+        mag_range_h = mag_max_h - mag_min_h
+        mag_buff_h = 0.1 * mag_range_h
+        
+        mag_lims_h = [mag_max_h + mag_buff_h, mag_min_h - mag_buff_h]
         
         # Set up for drawing the plot
         plt.style.use(['ticks_outtie', 'tex_paper'])
@@ -648,9 +664,13 @@ class star_add_binary_var(object):
         
         ax_obs_kp.errorbar(
             star_epoch_dates_kp, star_mags_kp, yerr=star_mag_uncs_kp,
-            fmt='.', color='C1')
+            fmt='.', color='C1', ms=10.0)
+        
+        ax_obs_kp.axhline(star_mag_med_kp,
+            ls=':', color='C1', lw=2., alpha=0.5)
         
         ax_obs_kp.set_xlim(time_xlims)
+        ax_obs_kp.set_ylim(mag_lims_kp)
         
         x_majorLocator = MultipleLocator(2.0)
         x_minorLocator = MultipleLocator(0.5)
@@ -665,9 +685,13 @@ class star_add_binary_var(object):
         
         ax_obs_h.errorbar(
             star_epoch_dates_h, star_mags_h, yerr=star_mag_uncs_h,
-            fmt='.', color='C0')
+            fmt='.', color='C0', ms=10.0)
+        
+        ax_obs_h.axhline(star_mag_med_h,
+            ls=':', color='C0', lw=2., alpha=0.5)
         
         ax_obs_h.set_xlim(time_xlims)
+        ax_obs_h.set_ylim(mag_lims_h)
         
         x_majorLocator = MultipleLocator(2.0)
         x_minorLocator = MultipleLocator(0.5)
@@ -693,9 +717,6 @@ class star_add_binary_var(object):
             sbv_phases_kp = ((self.epoch_MJDs_kp - self.t0) % sbv_period) / sbv_period
             sbv_phases_h = ((self.epoch_MJDs_h - self.t0) % sbv_period) / sbv_period
             
-            print(sbv_phases_kp)
-            print(sbv_phases_h)
-            
             # Set up a final gridspec for the injected star's light curves
             grid_sbv = grid_inj[sbv_index].subgridspec(nrows=2, ncols=2)
             
@@ -710,6 +731,7 @@ class star_add_binary_var(object):
             )
             
             ax_kp.set_xlim(time_xlims)
+            ax_kp.set_ylim(mag_lims_kp)
             
             ax_h = axs_sbv[1,0]
             ax_h.errorbar(
@@ -719,6 +741,7 @@ class star_add_binary_var(object):
             )
             
             ax_h.set_xlim(time_xlims)
+            ax_h.set_ylim(mag_lims_h)
             
             # Phase plots
             ax_ph_kp = axs_sbv[0,1]
@@ -727,8 +750,19 @@ class star_add_binary_var(object):
                 yerr=sbv_row['mag_unc_kp'],
                 fmt='.', color='C1',
             )
+            ax_ph_kp.errorbar(
+                sbv_phases_kp - 1, sbv_row['mag_kp'],
+                yerr=sbv_row['mag_unc_kp'],
+                fmt='.', color='C1', alpha=0.4,
+            )
+            ax_ph_kp.errorbar(
+                sbv_phases_kp + 1, sbv_row['mag_kp'],
+                yerr=sbv_row['mag_unc_kp'],
+                fmt='.', color='C1', alpha=0.4,
+            )
             
             ax_ph_kp.set_xlim([-0.5, 1.5])
+            ax_ph_kp.set_ylim(mag_lims_kp)
             
             ax_ph_h = axs_sbv[1,1]
             ax_ph_h.errorbar(
@@ -736,8 +770,19 @@ class star_add_binary_var(object):
                 yerr=sbv_row['mag_unc_h'],
                 fmt='.', color='C0',
             )
+            ax_ph_h.errorbar(
+                sbv_phases_h - 1, sbv_row['mag_h'],
+                yerr=sbv_row['mag_unc_h'],
+                fmt='.', color='C0', alpha=0.4,
+            )
+            ax_ph_h.errorbar(
+                sbv_phases_h + 1, sbv_row['mag_h'],
+                yerr=sbv_row['mag_unc_h'],
+                fmt='.', color='C0', alpha=0.4,
+            )
             
             ax_ph_h.set_xlim([-0.5, 1.5])
+            ax_ph_h.set_ylim(mag_lims_h)
             
             
         
