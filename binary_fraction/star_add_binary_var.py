@@ -571,6 +571,7 @@ class star_add_binary_var(object):
     def plot_star_binary_var_table(
             self, star,
             star_bin_var_out_dir='../star_bin_var/',
+            plot_out_dir='./',
             print_diagnostics=False):
         """
         Function to plot light curves injected with binarity for the target star
@@ -620,27 +621,33 @@ class star_add_binary_var(object):
         star_det_filt_kp = np.where(star_mags_kp > 0.)
         star_det_filt_h = np.where(star_mags_h > 0.)
         
-        star_mag_med_kp = np.median(star_mags_kp[star_det_filt_kp])
-        star_mag_med_h = np.median(star_mags_h[star_det_filt_h])
+        star_mags_kp = star_mags_kp[star_det_filt_kp]
+        star_mags_h = star_mags_h[star_det_filt_h]
+        
+        star_mag_uncs_kp = star_mag_uncs_kp[star_det_filt_kp]
+        star_mag_uncs_h = star_mag_uncs_h[star_det_filt_h]
+        
+        star_mag_med_kp = np.median(star_mags_kp)
+        star_mag_med_h = np.median(star_mags_h)
         
         # Cut out observation dates
-        star_epoch_dates_kp = self.epoch_dates_kp[star_det_filt_kp]
-        star_epoch_dates_h = self.epoch_dates_h[star_det_filt_h]
+        star_epoch_dates_kp = (self.epoch_dates_kp)[star_det_filt_kp]
+        star_epoch_dates_h = (self.epoch_dates_h)[star_det_filt_h]
         
         time_xlims = [np.floor(np.min(star_epoch_dates_kp)),
                       np.ceil(np.max(star_epoch_dates_kp))]
         
         # Determine y (mag) limits
-        mag_max_kp = np.max(star_table['mag_kp'])
-        mag_min_kp = np.min(star_table['mag_kp'])
+        mag_max_kp = np.nanmax(star_table['mag_kp'])
+        mag_min_kp = np.nanmin(star_table['mag_kp'])
         
         mag_range_kp = mag_max_kp - mag_min_kp
         mag_buff_kp = 0.1 * mag_range_kp
         
         mag_lims_kp = [mag_max_kp + mag_buff_kp, mag_min_kp - mag_buff_kp]
         
-        mag_max_h = np.max(star_table['mag_h'])
-        mag_min_h = np.min(star_table['mag_h'])
+        mag_max_h = np.nanmax(star_table['mag_h'])
+        mag_min_h = np.nanmin(star_table['mag_h'])
         
         mag_range_h = mag_max_h - mag_min_h
         mag_buff_h = 0.1 * mag_range_h
@@ -700,7 +707,7 @@ class star_add_binary_var(object):
         
         # Create a 5x10 grid for the injected light curve plots
         grid_inj = grid_main[:, 3:].subgridspec(
-            nrows=10, ncols=5)
+            nrows=10, ncols=5,)
         
         # Go through each injected light curve
         for sbv_index in star_table['star_bin_var_ids']:
@@ -790,8 +797,8 @@ class star_add_binary_var(object):
         # Save out final plot
         
         fig.tight_layout()
-        fig.savefig(star + '.pdf')
-        fig.savefig(star + '.png', dpi=200)
+        fig.savefig(plot_out_dir + star + '.pdf')
+        fig.savefig(plot_out_dir + star + '.png', dpi=200)
         plt.close(fig)
         
         
