@@ -245,17 +245,25 @@ class star_add_binary_var(object):
         star_mag_uncs_kp = self.mag_uncs_kp[star]
         star_mag_mean_kp = self.mag_means_kp[star]
         
-        star_mags_h = self.mags_h[star]
-        star_mag_uncs_h = self.mag_uncs_h[star]
-        star_mag_mean_h = self.mag_means_h[star]
+        if star in self.star_names_h:
+            star_mags_h = self.mags_h[star]
+            star_mag_uncs_h = self.mag_uncs_h[star]
+            star_mag_mean_h = self.mag_means_h[star]
+        else:
+            star_mags_h = np.zeros(self.num_nights_h)
+            star_mag_uncs_h = np.zeros(self.num_nights_h)
+            star_mag_mean_h = np.nan
         
         # Calculate median magnitude
         star_det_filt_kp = np.where(star_mags_kp > 0.)
         star_det_filt_h = np.where(star_mags_h > 0.)
         
         star_mag_med_kp = np.median(star_mags_kp[star_det_filt_kp])
-        star_mag_med_h = np.median(star_mags_h[star_det_filt_h])
         
+        if len(star_mags_h[star_det_filt_h]) > 0:
+            star_mag_med_h = np.median(star_mags_h[star_det_filt_h])
+        else:
+            star_mag_med_h = np.nan
         
         # Find all mock binaries that have median magnitudes within +- 0.25 mags
         mag_rad = 0.25
