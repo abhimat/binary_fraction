@@ -250,8 +250,8 @@ class star_add_binary_var(object):
             star_mag_uncs_h = self.mag_uncs_h[star]
             star_mag_mean_h = self.mag_means_h[star]
         else:
-            star_mags_h = np.zeros(self.num_nights_h)
-            star_mag_uncs_h = np.zeros(self.num_nights_h)
+            star_mags_h = np.ones(self.num_nights_h) * -1000.
+            star_mag_uncs_h = np.ones(self.num_nights_h) * 1000.
             star_mag_mean_h = np.nan
         
         # Calculate median magnitude
@@ -580,6 +580,8 @@ class star_add_binary_var(object):
             self, star,
             star_bin_var_out_dir='../star_bin_var/',
             plot_out_dir='./',
+            plot_detections=False,
+            detections_table='../bin_detectability/bin_detect_sampall.h5'
             print_diagnostics=False):
         """
         Function to plot light curves injected with binarity for the target star
@@ -621,9 +623,14 @@ class star_add_binary_var(object):
         star_mag_uncs_kp = self.mag_uncs_kp[star]
         star_mag_mean_kp = self.mag_means_kp[star]
         
-        star_mags_h = self.mags_h[star]
-        star_mag_uncs_h = self.mag_uncs_h[star]
-        star_mag_mean_h = self.mag_means_h[star]
+        if star in self.star_names_h:
+            star_mags_h = self.mags_h[star]
+            star_mag_uncs_h = self.mag_uncs_h[star]
+            star_mag_mean_h = self.mag_means_h[star]
+        else:
+            star_mags_h = np.ones(self.num_nights_h) * -1000.
+            star_mag_uncs_h = np.ones(self.num_nights_h) * 1000.
+            star_mag_mean_h = np.nan
         
         # Calculate median magnitude
         star_det_filt_kp = np.where(star_mags_kp > 0.)
@@ -636,7 +643,11 @@ class star_add_binary_var(object):
         star_mag_uncs_h = star_mag_uncs_h[star_det_filt_h]
         
         star_mag_med_kp = np.median(star_mags_kp)
-        star_mag_med_h = np.median(star_mags_h)
+        
+        if len(star_mags_h) > 0:
+            star_mag_med_h = np.median(star_mags_h)
+        else:
+            star_mag_med_h = np.nan
         
         # Cut out observation dates
         star_epoch_dates_kp = (self.epoch_dates_kp)[star_det_filt_kp]
@@ -660,7 +671,10 @@ class star_add_binary_var(object):
         mag_range_h = mag_max_h - mag_min_h
         mag_buff_h = 0.1 * mag_range_h
         
-        mag_lims_h = [mag_max_h + mag_buff_h, mag_min_h - mag_buff_h]
+        if mag_range_h > 0:
+            mag_lims_h = [mag_max_h + mag_buff_h, mag_min_h - mag_buff_h]
+        else:
+            mag_lims_h = [1.0, -1.0]
         
         # Set up for drawing the plot
         plt.style.use(['ticks_outtie', 'tex_paper'])
