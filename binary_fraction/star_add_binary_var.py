@@ -581,8 +581,11 @@ class star_add_binary_var(object):
             star_bin_var_out_dir='../star_bin_var/',
             plot_out_dir='./',
             plot_detections=False,
-            detections_table='../bin_detectability/bin_detect_sampall.h5'
-            print_diagnostics=False):
+            detections_table='../bin_detectability/bin_detect_sampall.h5',
+            print_diagnostics=False,
+            plot_n_rows=10, plot_n_cols=5,
+            plot_figsize=(20, 10),
+        ):
         """
         Function to plot light curves injected with binarity for the target star
         
@@ -679,7 +682,8 @@ class star_add_binary_var(object):
         # Set up for drawing the plot
         plt.style.use(['ticks_outtie', 'tex_paper'])
         
-        fig = plt.figure(figsize=(35, 15))
+        # fig = plt.figure(figsize=(26, 12))
+        fig = plt.figure(figsize=plot_figsize)
         
         # Set up main grid (overall light curve + space for all injected)
         grid_main = fig.add_gridspec(
@@ -693,7 +697,7 @@ class star_add_binary_var(object):
         
         ax_obs_kp.errorbar(
             star_epoch_dates_kp, star_mags_kp, yerr=star_mag_uncs_kp,
-            fmt='.', color='C1', ms=10.0)
+            fmt='.', color='C1', ms=15.0)
         
         ax_obs_kp.axhline(star_mag_med_kp,
             ls=':', color='C1', lw=2., alpha=0.5)
@@ -714,7 +718,7 @@ class star_add_binary_var(object):
         
         ax_obs_h.errorbar(
             star_epoch_dates_h, star_mags_h, yerr=star_mag_uncs_h,
-            fmt='.', color='C0', ms=10.0)
+            fmt='.', color='C0', ms=15.0)
         
         ax_obs_h.axhline(star_mag_med_h,
             ls=':', color='C0', lw=2., alpha=0.5)
@@ -729,7 +733,9 @@ class star_add_binary_var(object):
         
         # Create a 5x10 grid for the injected light curve plots
         grid_inj = grid_main[:, 3:].subgridspec(
-            nrows=10, ncols=5,)
+            nrows=plot_n_rows, ncols=plot_n_cols,
+            wspace=0.175, hspace=0.2,
+        )
         
         # Go through each injected light curve
         for sbv_index in star_table['star_bin_var_ids']:
@@ -747,7 +753,9 @@ class star_add_binary_var(object):
             sbv_phases_h = ((self.epoch_MJDs_h - self.t0) % sbv_period) / sbv_period
             
             # Set up a final gridspec for the injected star's light curves
-            grid_sbv = grid_inj[sbv_index].subgridspec(nrows=2, ncols=2)
+            grid_sbv = grid_inj[sbv_index].subgridspec(
+                nrows=2, ncols=2, wspace=0.125, hspace=0.15,
+            )
             
             axs_sbv = grid_sbv.subplots()
             
@@ -757,6 +765,7 @@ class star_add_binary_var(object):
                 self.epoch_dates_kp, sbv_row['mag_kp'],
                 yerr=sbv_row['mag_unc_kp'],
                 fmt='.', color='C1',
+                ms=2.0,
             )
             
             ax_kp.set_xlim(time_xlims)
@@ -767,10 +776,23 @@ class star_add_binary_var(object):
                 self.epoch_dates_h, sbv_row['mag_h'],
                 yerr=sbv_row['mag_unc_h'],
                 fmt='.', color='C0',
+                ms=2.0,
             )
             
             ax_h.set_xlim(time_xlims)
             ax_h.set_ylim(mag_lims_h)
+            
+            text_y = 0.85*(mag_lims_h[0] - mag_lims_h[1]) + mag_lims_h[1]
+            
+            ax_h.text(
+                2007.25, text_y, sbv_index,
+                ha='left', va='bottom',
+                fontsize='x-small',
+                bbox={
+                    'facecolor':'white', 'alpha':0.5,
+                    'boxstyle':'round',
+                },
+            )
             
             # Phase plots
             ax_ph_kp = axs_sbv[0,1]
@@ -778,16 +800,19 @@ class star_add_binary_var(object):
                 sbv_phases_kp, sbv_row['mag_kp'],
                 yerr=sbv_row['mag_unc_kp'],
                 fmt='.', color='C1',
+                ms=2.0,
             )
             ax_ph_kp.errorbar(
                 sbv_phases_kp - 1, sbv_row['mag_kp'],
                 yerr=sbv_row['mag_unc_kp'],
                 fmt='.', color='C1', alpha=0.4,
+                ms=2.0,
             )
             ax_ph_kp.errorbar(
                 sbv_phases_kp + 1, sbv_row['mag_kp'],
                 yerr=sbv_row['mag_unc_kp'],
                 fmt='.', color='C1', alpha=0.4,
+                ms=2.0,
             )
             
             ax_ph_kp.set_xlim([-0.5, 1.5])
@@ -798,21 +823,45 @@ class star_add_binary_var(object):
                 sbv_phases_h, sbv_row['mag_h'],
                 yerr=sbv_row['mag_unc_h'],
                 fmt='.', color='C0',
+                ms=2.0,
             )
             ax_ph_h.errorbar(
                 sbv_phases_h - 1, sbv_row['mag_h'],
                 yerr=sbv_row['mag_unc_h'],
                 fmt='.', color='C0', alpha=0.4,
+                ms=2.0,
             )
             ax_ph_h.errorbar(
                 sbv_phases_h + 1, sbv_row['mag_h'],
                 yerr=sbv_row['mag_unc_h'],
                 fmt='.', color='C0', alpha=0.4,
+                ms=2.0,
             )
             
             ax_ph_h.set_xlim([-0.5, 1.5])
             ax_ph_h.set_ylim(mag_lims_h)
             
+            # Turn off all y ticks for phase plots
+            ax_ph_kp.set_yticklabels([])
+            ax_ph_h.set_yticklabels([])
+            
+            # Turn off axis labels depending on where on plot
+            if sbv_index % 5 != 0: 
+                ax_kp.set_yticklabels([])
+                ax_h.set_yticklabels([])
+            else:
+                ax_kp.set_ylabel(r"$m_{K'}$")
+                ax_h.set_ylabel(r"$m_{H}$")
+            
+            if sbv_index < 45: 
+                ax_kp.set_xticklabels([])
+                ax_h.set_xticklabels([])
+                
+                ax_ph_kp.set_xticklabels([])
+                ax_ph_h.set_xticklabels([])
+            else:
+                ax_h.set_xlabel(r"Obs. Time")
+                ax_ph_h.set_xlabel(r"Orb. Per. Phase")
             
         
         
