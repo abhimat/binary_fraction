@@ -59,6 +59,27 @@ class bin_detectability(object):
         
         return
     
+    def load_model_lc_params_table(
+            self, table_file_path='./binary_model_lc_params.h5'):
+        """
+        Load the binary model light curve parameters table
+        """
+        # Load in the table
+        model_lc_params_table = Table.read(
+            table_file_path, path='data')
+        
+        model_lc_params_table.add_index(['binary_index'])
+        
+        # # Clean out stars that don't have any light curves
+        # lc_filt = np.where(model_lc_params_table['med_mag_kp'] > 0)
+        #
+        # model_lc_params_table = model_lc_params_table[lc_filt]
+        
+        # Save out as a class variable
+        self.model_lc_params_table = model_lc_params_table
+        
+        return
+    
     def read_align_data(
             self, align_kp_name, align_h_name,
             align_data_location = '/g/ghez/abhimat/datasets/align_data_py3/'
@@ -124,6 +145,9 @@ class bin_detectability(object):
     def compute_detectability(
             self, stars_list,
             num_mock_bins=50,
+            low_sig_check = 0.60,
+            high_sig_check = 0.97,
+            amp_check = 7.0,
             out_bin_detect_table_root='./bin_detect',
             print_diagnostics=False,
         ):
@@ -138,6 +162,7 @@ class bin_detectability(object):
         """
         # Calculate some parameters for search
         longPer_boundary = self.time_baseline / 4.
+        longPer_boundary = 365.25
         longPer_BSSig_boundary = 0.5
         
         # Create empty arrays for storing outputs
@@ -166,19 +191,22 @@ class bin_detectability(object):
         )
         
         # Compute detectability for every star in specified sample
-        for (star_index, star) in tqdm(enumerate(stars_list)):
+        for (star_index, star) in tqdm(enumerate(stars_list), total=len(stars_list)):
             star_table = Table.read(
                 f'{self.sbv_dir}/{star}.h5',
                 path='data')
             star_table.add_index('star_bin_var_ids')
-    
+            
             star_out_LS_table = Table.read(
                 f'{self.sbv_dir}/LS_Periodicity_Out/{star}.h5',
-                path='data')
-    
+                path='data',
+            )
+            
             # Go through each unique mock index for the given star
             
             if print_diagnostics:
+                print('\n===')
+                print(f'Current star: {star}')
                 print(star_table)
                 print(star_out_LS_table)
             
@@ -193,16 +221,24 @@ class bin_detectability(object):
         
                 mock_bin_id = (star_table.loc[sbv])['selected_bin_ids']
                 mock_bin_row = self.model_sb_params_table.loc[mock_bin_id]
-        
+                mock_bin_lc_row = self.model_lc_params_table.loc[mock_bin_id]
+                
                 mock_true_period = mock_bin_row['binary_period']
         
-                # print(mock_LS_results)
+                if print_diagnostics:
+                    print('---')
+                    print(f'SBV ID: {sbv}')
+                    print(f'True Binary Period: {mock_true_period:.3f} d')
         
                 # Check for long period getting aliased
-                longPer_filt = np.where(sbv_LS_results['LS_periods'] >= longPer_boundary)
+                longPer_filt = np.where(
+                    sbv_LS_results['LS_periods'] >= longPer_boundary)
                 longPer_filt_results = sbv_LS_results[longPer_filt]
-        
+                
                 if len(longPer_filt_results) > 0:
+                    if print_diagnostics:
+                        print('Long period alias check failing')
+                    
                     continue
                 
                 # Check for a signal at binary period and half of binary period
@@ -216,12 +252,45 @@ class bin_detectability(object):
         
                 binPer_filt_results = sbv_LS_results[binPer_filt]
                 binPer_half_filt_results = sbv_LS_results[binPer_half_filt]
-        
+                
                 if (len(binPer_filt_results) + len(binPer_half_filt_results)) == 0:
+                    if print_diagnostics:
+                        print('No periodic signal found at binary period')
+                    
                     continue
-        
+                
+                # Perform checks for LS significance and LS significance
+                matching_sigs = np.append(
+                    binPer_filt_results['LS_bs_sigs'],
+                    binPer_half_filt_results['LS_bs_sigs'],
+                )
+                
+                peak_sig = np.max(matching_sigs)
+                
+                bin_delta_mag_kp = mock_bin_lc_row['delta_mag_kp']
+                med_mag_unc_kp = np.median((star_table.loc[sbv])['mag_unc_kp'])
+                
+                peak_amp = bin_delta_mag_kp / med_mag_unc_kp
+                
+                if print_diagnostics:
+                    print(f'Peak delta mag / med mag unc = {peak_amp:.3f}')
+                    print(f'Peak BS sig = {(peak_sig*100):.3f}%')
+                
+                if peak_sig < low_sig_check:
+                    if print_diagnostics:
+                        print('No peaks > 60% BS significance')
+                    
+                    continue
+                
+                if peak_sig < high_sig_check and peak_amp < amp_check:
+                    if print_diagnostics:
+                        print('Peak < 97% significant and amplitude < 7')
+                    
+                    continue
+                
                 # Success
-                # print(f'\tMock {mock} passed ({mock_true_period:.3f} d period)')
+                if print_diagnostics:
+                    print(f'\tSBV detected in search')
                 
                 passing_sbvs.append(sbv)
                 stars_passing_sbvs[star_index, sbv] = True
