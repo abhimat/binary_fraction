@@ -24,7 +24,8 @@ def params_from_binary_row(cur_binary_row, s_b_params_calc_obj):
                 cur_binary_row['binary_t0_shift'],
                 cur_binary_row['binary_q'],
                 cur_binary_row['binary_ecc'],
-                cur_binary_row['binary_inc'])
+                cur_binary_row['binary_inc'],
+            )
 
 class stellar_binary_params_calc(object):
     def  __init__(self):
@@ -107,6 +108,10 @@ class stellar_binary_params_calc(object):
         binary_mass_func = ((star2_mass ** 3.) * (np.sin(binary_inc) ** 3.) /
                                 (star1_mass + star2_mass)**2. )
         
+        # Semi-amplitude of RV signal
+        binary_rv_K = (2. * np.pi * binary_sma * np.sin(binary_inc * u.deg) /
+                       (binary_period * u.d)).to(u.km / u.s)
+        
         # Generate output tuple
         out_params = (star1_mass_init.to(u.solMass).value,
                       star1_mass.to(u.solMass).value,
@@ -126,6 +131,7 @@ class stellar_binary_params_calc(object):
                       binary_ecc, binary_inc,
                       binary_sma.to(u.AU).value,
                       binary_mass_func.to(u.solMass).value,
+                      binary_rv_K.to(u.km / u.s).value
                      )
         return out_params
     
@@ -171,7 +177,8 @@ class stellar_binary_params_calc(object):
         binary_inc_samps = np.empty(num_binaries) * u.degree
         binary_sma_samps = np.empty(num_binaries) * u.AU
         binary_mass_func_samps = np.empty(num_binaries) * u.solMass
-
+        binary_rv_K_samps = np.empty(num_binaries) * u.km / u.s
+        
         # Put parameter outputs into arrays
         for cur_bin_index in tqdm(range(num_binaries)):
             if type(out_params[cur_bin_index]) is tuple:
@@ -184,6 +191,7 @@ class stellar_binary_params_calc(object):
                  binary_ecc, binary_inc,
                  binary_sma,
                  binary_mass_func,
+                 binary_rv_K,
                 ) = (np.nan, np.nan, np.nan, np.nan,
                      np.nan, np.nan, np.nan,
                      np.nan, np.nan, np.nan, np.nan,
@@ -191,6 +199,7 @@ class stellar_binary_params_calc(object):
                      np.nan, np.nan, np.nan,
                      np.nan, np.nan,
                      np.nan, np.nan,
+                     np.nan
                     )
             else:
                 (star1_mass_init, star1_mass, star1_rad, star1_den,
@@ -201,6 +210,7 @@ class stellar_binary_params_calc(object):
                  binary_ecc, binary_inc,
                  binary_sma,
                  binary_mass_func,
+                 binary_rv_K,
                 ) = out_params[cur_bin_index]
             
             # Stellar parameters
@@ -228,11 +238,10 @@ class stellar_binary_params_calc(object):
             binary_inc_samps[cur_bin_index] = binary_inc * u.degree
             binary_sma_samps[cur_bin_index] = binary_sma * u.AU
             binary_mass_func_samps[cur_bin_index] = binary_mass_func * u.solMass
-
-
-        # Make parameter table for output
+            binary_rv_K_samps[cur_bin_index] = binary_rv_K * u.km / u.s
+            
         
-        np.arange
+        # Make parameter table for output
         
         params_table = Table([np.arange(num_binaries, dtype=int),
                               star1_mass_init_samps, star1_mass_samps,
@@ -246,7 +255,9 @@ class stellar_binary_params_calc(object):
                               binary_period_samps,
                               binary_q_samps, binary_q_init_samps,
                               binary_ecc_samps, binary_inc_samps,
-                              binary_sma_samps, binary_mass_func_samps],
+                              binary_sma_samps, binary_mass_func_samps,
+                              binary_rv_K_samps,
+                             ],
                              names=('binary_index',
                                     'star1_mass_init', 'star1_mass',
                                     'star1_rad', 'star1_den',
@@ -260,15 +271,15 @@ class stellar_binary_params_calc(object):
                                     'binary_q', 'binary_q_init',
                                     'binary_ecc', 'binary_inc',
                                     'binary_sma', 'binary_mass_func',
+                                    'binary_rv_K',
                                    ),
                             )
-        
         
         params_table.write('stellar_binary_params.h5', path='data',
                            serialize_meta=True, compression=True,
                            overwrite=True)
-
+        
         params_table.write('stellar_binary_params.txt',
                            format='ascii.fixed_width', overwrite=True)
-
+        
         return
