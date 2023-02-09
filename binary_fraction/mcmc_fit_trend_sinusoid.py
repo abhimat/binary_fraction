@@ -48,8 +48,6 @@ class mcmc_fitter(object):
         
         self.h_obs_mags = obs[self.h_obs_filt]
         self.h_obs_mag_errors = obs_errors[self.h_obs_filt]
-        
-        print(self.h_obs_mags)
     
     
     # Prior function
