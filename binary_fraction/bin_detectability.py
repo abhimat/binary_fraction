@@ -175,6 +175,7 @@ class bin_detectability(object):
             show_MCMC_progress=False,
             mcmc_steps=500,
             last_steps=200,
+            print_diagnostics=False,
         ):
         """
         Run MCMC fit for trended sinusoid
@@ -288,6 +289,11 @@ class bin_detectability(object):
                 np.array([1e-3]),
             )
         
+        if print_diagnostics:
+            print(f'Initial theta: {theta_init}')
+            log_prob_init = mcmc_fit_obj.log_probability(theta_init)
+            print(f'Initial log prob: {log_prob_init:.5f}')
+        
         pos = np.tile(theta_init, (nwalkers,1)) +\
               (scale_mult * np.random.randn(nwalkers, ndim))
         
@@ -355,11 +361,19 @@ class bin_detectability(object):
         for (star_index, star) in tqdm(enumerate(stars_list), total=len(stars_list)):
             # If cos amp sig calculations already complete for star, continue
             if os.path.isfile(f'{amp_sigs_dir}/{star}.h5'):
+                print(f'Amp sigs for {star} already computed')
                 continue
             
+            print(f'Computing amp sigs for {star}')
+            
+            # Determine polynomial trend order (minimum 1)
             sbv_sample_table_star_row = self.sbv_sample_table.loc[star]
             star_poly_trend_order = sbv_sample_table_star_row['poly_trend_order']
             
+            if star_poly_trend_order < 1:
+                star_poly_trend_order = 1
+            
+            # Read star tables
             star_table = Table.read(
                 f'{self.sbv_dir}/{star}.h5',
                 path='data')
@@ -499,6 +513,7 @@ class bin_detectability(object):
                     star_poly_trend_order, t0, fit_period,
                     mags, mag_errors,
                     obs_days, obs_filts,
+                    print_diagnostics=print_diagnostics,
                 )
                 
                 if print_diagnostics:
@@ -533,15 +548,14 @@ class bin_detectability(object):
                 format='ascii.fixed_width',
                 overwrite=True,
             )
-            break
         
     
     def compute_detectability(
             self, stars_list,
             num_mock_bins=50,
-            low_sig_check = 0.60,
-            high_sig_check = 0.97,
-            amp_check = 7.0,
+            low_sig_check = 0.70,
+            high_sig_check = 0.95,
+            amp_check = 20.0,
             out_bin_detect_table_root='./bin_detect',
             print_diagnostics=False,
         ):
@@ -582,6 +596,7 @@ class bin_detectability(object):
         
         # Compute detectability for every star in specified sample
         for (star_index, star) in tqdm(enumerate(stars_list), total=len(stars_list)):
+            # Read star model, LS, and amp sig tables
             star_table = Table.read(
                 f'{self.sbv_dir}/{star}.h5',
                 path='data')
@@ -591,6 +606,12 @@ class bin_detectability(object):
                 f'{self.sbv_dir}/LS_Periodicity_Out/{star}.h5',
                 path='data',
             )
+            
+            star_amp_sig_table = Table.read(
+                f'{self.sbv_dir}/amp_sigs/{star}.h5',
+                path='data',
+            )
+            star_amp_sig_table.add_index('star_bin_var_ids')
             
             # Go through each unique mock index for the given star
             
@@ -622,7 +643,7 @@ class bin_detectability(object):
         
                 # Check for long period getting aliased
                 longPer_filt = np.where(
-                    sbv_LS_results['LS_periods'] >= longPer_boundary)
+                    sbv_LS_results['LS_periods'] >= self.longPer_boundary)
                 longPer_filt_results = sbv_LS_results[longPer_filt]
                 
                 if len(longPer_filt_results) > 0:
@@ -657,10 +678,7 @@ class bin_detectability(object):
                 
                 peak_sig = np.max(matching_sigs)
                 
-                bin_delta_mag_kp = mock_bin_lc_row['delta_mag_kp']
-                med_mag_unc_kp = np.median((star_table.loc[sbv])['mag_unc_kp'])
-                
-                peak_amp = bin_delta_mag_kp / med_mag_unc_kp
+                peak_amp = (star_amp_sig_table.loc[sbv])['cos_amp_sigs']
                 
                 if print_diagnostics:
                     print(f'Peak delta mag / med mag unc = {peak_amp:.3f}')
@@ -668,13 +686,13 @@ class bin_detectability(object):
                 
                 if peak_sig < low_sig_check:
                     if print_diagnostics:
-                        print('No peaks > 60% BS significance')
+                        print('No peaks > {low_sig_check*100}% BS significance')
                     
                     continue
                 
                 if peak_sig < high_sig_check and peak_amp < amp_check:
                     if print_diagnostics:
-                        print('Peak < 97% significant and amplitude < 7')
+                        print('Peak < {high_sig_check*100}% significant and amplitude < {amp_check}')
                     
                     continue
                 
