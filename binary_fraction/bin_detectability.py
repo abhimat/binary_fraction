@@ -171,6 +171,7 @@ class bin_detectability(object):
             poly_trend_order, t0, period,
             mags, mag_errors,
             obs_days, obs_filts,
+            mp_pool=None,
             run_initial_LS=True,
             run_initial_polyfit=True,
             show_MCMC_progress=False,
@@ -301,9 +302,8 @@ class bin_detectability(object):
               (scale_mult * np.random.randn(nwalkers, ndim))
         
         # Set up sampler
-        # mp_pool = Pool(self.num_cores)
-        # mp_pool = schwimmbad.MultiPool(self.num_cores)
-        mp_pool = schwimmbad.MPIPool(self.num_cores)
+        if mp_pool == None:
+            mp_pool = schwimmbad.MultiPool(self.num_cores)
         
         sampler = emcee.EnsembleSampler(
             nwalkers, ndim, mcmc_fit_obj.log_probability,
@@ -343,18 +343,19 @@ class bin_detectability(object):
         return (cos_amp_sig, maxProb_cos_amp, cos_amp_sig1)
     
     def compute_amp_sig(
-            self, stars_list,
+            self, star,
             num_mock_bins=50,
             low_sig_check = 0.60,
             print_diagnostics=False,
+            mp_pool = None,
         ):
         """
         Compute the amplitude significance of possible binary detection signals
         
         Parameters
         ----------
-        stars_list : list[str]
-            List of star names to compute the amplitude significance for
+        star : str
+            Star name to compute the amplitude significance for
         """
         
         # Make output directory
@@ -363,193 +364,195 @@ class bin_detectability(object):
         os.makedirs(amp_sigs_dir, exist_ok=True)
         
         # Compute detectability for every star in specified sample
-        for (star_index, star) in tqdm(enumerate(stars_list), total=len(stars_list)):
-            # If cos amp sig calculations already complete for star, continue
-            if os.path.isfile(f'{amp_sigs_dir}/{star}.h5'):
-                print(f'Amp sigs for {star} already computed')
-                continue
+        # If cos amp sig calculations already complete for star, return
+        if os.path.isfile(f'{amp_sigs_dir}/{star}.h5'):
+            print(f'Amp sigs for {star} already computed')
+            return
+        
+        print(f'Computing amp sigs for {star}')
+        
+        # Determine polynomial trend order (minimum 1)
+        sbv_sample_table_star_row = self.sbv_sample_table.loc[star]
+        star_poly_trend_order = sbv_sample_table_star_row['poly_trend_order']
+        
+        if star_poly_trend_order < 1:
+            star_poly_trend_order = 1
+        
+        # Read star tables
+        star_table = Table.read(
+            f'{self.sbv_dir}/{star}.h5',
+            path='data')
+        star_table.add_index('star_bin_var_ids')
+        
+        star_out_LS_table = Table.read(
+            f'{self.sbv_dir}/LS_Periodicity_Out/{star}.h5',
+            path='data',
+        )
+        
+        # Go through each sbv for the given star
+        # Compute amplitude only for most significant peak,
+        # if most sig peak is consistent or not with binary detection
+        
+        inj_sbv_ids = star_table['star_bin_var_ids']
+        LS_sbv_ids = np.unique(star_out_LS_table['bin_var_id']).astype(int)
+        
+        # Empty array to store significances
+        cos_amp_sigs = np.zeros(len(LS_sbv_ids))
+        cos_amps = np.zeros(len(LS_sbv_ids))
+        cos_amp_sig1s = np.zeros(len(LS_sbv_ids))
+        
+        if print_diagnostics:
+            print('\n===')
+            print(f'Current star: {star}')
+            print(star_table)
+            print(star_out_LS_table)
+            print(cos_amp_sigs)
+        
+        for (sbv_index, sbv) in tqdm(enumerate(LS_sbv_ids), total=len(LS_sbv_ids)):
+            sbv_filter = np.where(star_out_LS_table['bin_var_id'] == sbv)
+            sbv_LS_results = star_out_LS_table[sbv_filter]
             
-            print(f'Computing amp sigs for {star}')
+            mock_bin_id = (star_table.loc[sbv])['selected_bin_ids']
+            mock_bin_row = self.model_sb_params_table.loc[mock_bin_id]
+            mock_bin_lc_row = self.model_lc_params_table.loc[mock_bin_id]
             
-            # Determine polynomial trend order (minimum 1)
-            sbv_sample_table_star_row = self.sbv_sample_table.loc[star]
-            star_poly_trend_order = sbv_sample_table_star_row['poly_trend_order']
-            
-            if star_poly_trend_order < 1:
-                star_poly_trend_order = 1
-            
-            # Read star tables
-            star_table = Table.read(
-                f'{self.sbv_dir}/{star}.h5',
-                path='data')
-            star_table.add_index('star_bin_var_ids')
-            
-            star_out_LS_table = Table.read(
-                f'{self.sbv_dir}/LS_Periodicity_Out/{star}.h5',
-                path='data',
-            )
-            
-            # Go through each sbv for the given star
-            # Compute amplitude only for most significant peak,
-            # if most sig peak is consistent or not with binary detection
-            
-            inj_sbv_ids = star_table['star_bin_var_ids']
-            LS_sbv_ids = np.unique(star_out_LS_table['bin_var_id']).astype(int)
-            
-            # Empty array to store significances
-            cos_amp_sigs = np.zeros(len(LS_sbv_ids))
-            cos_amps = np.zeros(len(LS_sbv_ids))
-            cos_amp_sig1s = np.zeros(len(LS_sbv_ids))
+            mock_true_period = mock_bin_row['binary_period']
             
             if print_diagnostics:
-                print('\n===')
-                print(f'Current star: {star}')
-                print(star_table)
-                print(star_out_LS_table)
-                print(cos_amp_sigs)
+                print('---')
+                print(f'SBV ID: {sbv}')
+                print(f'True Binary Period: {mock_true_period:.3f} d')
             
-            for (sbv_index, sbv) in tqdm(enumerate(LS_sbv_ids), total=len(LS_sbv_ids)):
-                sbv_filter = np.where(star_out_LS_table['bin_var_id'] == sbv)
-                sbv_LS_results = star_out_LS_table[sbv_filter]
-                
-                mock_bin_id = (star_table.loc[sbv])['selected_bin_ids']
-                mock_bin_row = self.model_sb_params_table.loc[mock_bin_id]
-                mock_bin_lc_row = self.model_lc_params_table.loc[mock_bin_id]
-                
-                mock_true_period = mock_bin_row['binary_period']
-                
-                if print_diagnostics:
-                    print('---')
-                    print(f'SBV ID: {sbv}')
-                    print(f'True Binary Period: {mock_true_period:.3f} d')
-                
-                # Check for long period getting aliased
-                longPer_filt = np.where(
-                    sbv_LS_results['LS_periods'] >= self.longPer_boundary)
-                longPer_filt_results = sbv_LS_results[longPer_filt]
-                
-                if len(longPer_filt_results) > 0:
-                    if print_diagnostics:
-                        print('Long period alias check failing')
-                    
-                    continue
-                
-                # Check for a signal at binary period and half of binary period
-                binPer_filt = np.where(np.logical_and(
-                    sbv_LS_results['LS_periods'] >= mock_true_period * 0.99,
-                    sbv_LS_results['LS_periods'] <= mock_true_period * 1.01))
+            # Check for long period getting aliased
+            longPer_filt = np.where(
+                sbv_LS_results['LS_periods'] >= self.longPer_boundary)
+            longPer_filt_results = sbv_LS_results[longPer_filt]
             
-                binPer_half_filt = np.where(np.logical_and(
-                    sbv_LS_results['LS_periods'] >= (0.5*mock_true_period) * 0.99,
-                    sbv_LS_results['LS_periods'] <= (0.5*mock_true_period) * 1.01))
-                
-                binPer_filt_results = sbv_LS_results[binPer_filt]
-                binPer_half_filt_results = sbv_LS_results[binPer_half_filt]
-                
-                # Perform checks for LS significance and LS significance
-                matching_sigs = np.append(
-                    binPer_filt_results['LS_bs_sigs'],
-                    binPer_half_filt_results['LS_bs_sigs'],
-                )
-                matching_periods = np.append(
-                    binPer_filt_results['LS_periods'],
-                    binPer_half_filt_results['LS_periods'],
-                )
-                
-                peak_sig = np.max(sbv_LS_results['LS_bs_sigs'])
-                
-                if peak_sig < low_sig_check:
-                    if print_diagnostics:
-                        print(f'Peak significance is lower than low_sig_check: {low_sig_check}')
-                    
-                    continue
-                
-                # Success: possible detected peak, need amplitude check
+            if len(longPer_filt_results) > 0:
                 if print_diagnostics:
-                    print(f'\tSBV detected in search')
-                    print(f'\tNeed amplitude search')
+                    print('Long period alias check failing')
                 
-                # Determine fit period
-                fit_period = (sbv_LS_results['LS_periods'])[
-                    np.argmax(sbv_LS_results['LS_bs_sigs'])
-                ]
-                
-                if print_diagnostics:
-                    print(f'Fitting for trended sinusoid at period {fit_period:.5f} d')
-                
-                # Construct dataset for fitting trended sinusoid
-                kp_mags = (star_table.loc[sbv])['mag_kp']
-                kp_mag_errors = (star_table.loc[sbv])['mag_unc_kp']
-                kp_MJDs = self.epoch_MJDs_kp
-                
-                kp_det_epochs = np.where(kp_mags > 0.)
-                
-                kp_mags = kp_mags[kp_det_epochs]
-                kp_mag_errors = kp_mag_errors[kp_det_epochs]
-                kp_MJDs = kp_MJDs[kp_det_epochs]
-                
-                h_mags = (star_table.loc[sbv])['mag_h']
-                h_mag_errors = (star_table.loc[sbv])['mag_unc_h']
-                h_MJDs = self.epoch_MJDs_h
-                
-                h_det_epochs = np.where(h_mags > 0.)
-                
-                h_mags = h_mags[h_det_epochs]
-                h_mag_errors = h_mag_errors[h_det_epochs]
-                h_MJDs = h_MJDs[h_det_epochs]
-                
-                t0 = kp_MJDs[np.argmax(kp_mags)]
-                
-                mags = np.append(kp_mags, h_mags)
-                mag_errors = np.append(kp_mag_errors, h_mag_errors)
-                obs_days = np.append(kp_MJDs, h_MJDs)
-                obs_filts = np.append(
-                    np.full_like(kp_MJDs, 'kp', dtype='|S2'),
-                    np.full_like(h_MJDs, 'h', dtype='|S2'),
-                )
-                
-                (cos_amp_sig,
-                 cos_amp,
-                 cos_amp_sig1,) = self.fit_trended_sinusoid(
-                    star_poly_trend_order, t0, fit_period,
-                    mags, mag_errors,
-                    obs_days, obs_filts,
-                    print_diagnostics=print_diagnostics,
-                )
-                
-                if print_diagnostics:
-                    print(f'Cos Amp Sig = {cos_amp_sig:.5f}')
-                
-                cos_amp_sigs[sbv_index] = cos_amp_sig
-                cos_amps[sbv_index] = cos_amp
-                cos_amp_sig1s[sbv_index] = cos_amp_sig1
-                
-            star_amp_sig_table = Table(
-                [
-                    LS_sbv_ids,
-                    cos_amp_sigs,
-                    cos_amps,
-                    cos_amp_sig1s,
-                ],
-                names=(
-                    'star_bin_var_ids',
-                    'cos_amp_sigs',
-                    'cos_amps',
-                    'cos_amp_sig1_uncs',
-                )
-            )
+                continue
             
-            star_amp_sig_table.write(
-                f'{amp_sigs_dir}/{star}.h5',
-                path='data', compression=True,
-                overwrite=True,
-            )
-            star_amp_sig_table.write(
-                f'{amp_sigs_dir}/{star}.txt',
-                format='ascii.fixed_width',
-                overwrite=True,
-            )
+            # Check for a signal at binary period and half of binary period
+            binPer_filt = np.where(np.logical_and(
+                sbv_LS_results['LS_periods'] >= mock_true_period * 0.99,
+                sbv_LS_results['LS_periods'] <= mock_true_period * 1.01))
         
+            binPer_half_filt = np.where(np.logical_and(
+                sbv_LS_results['LS_periods'] >= (0.5*mock_true_period) * 0.99,
+                sbv_LS_results['LS_periods'] <= (0.5*mock_true_period) * 1.01))
+            
+            binPer_filt_results = sbv_LS_results[binPer_filt]
+            binPer_half_filt_results = sbv_LS_results[binPer_half_filt]
+            
+            # Perform checks for LS significance and LS significance
+            matching_sigs = np.append(
+                binPer_filt_results['LS_bs_sigs'],
+                binPer_half_filt_results['LS_bs_sigs'],
+            )
+            matching_periods = np.append(
+                binPer_filt_results['LS_periods'],
+                binPer_half_filt_results['LS_periods'],
+            )
+            
+            peak_sig = np.max(sbv_LS_results['LS_bs_sigs'])
+            
+            if peak_sig < low_sig_check:
+                if print_diagnostics:
+                    print(f'Peak significance is lower than low_sig_check: {low_sig_check}')
+                
+                continue
+            
+            # Success: possible detected peak, need amplitude check
+            if print_diagnostics:
+                print(f'\tSBV detected in search')
+                print(f'\tNeed amplitude search')
+            
+            # Determine fit period
+            fit_period = (sbv_LS_results['LS_periods'])[
+                np.argmax(sbv_LS_results['LS_bs_sigs'])
+            ]
+            
+            if print_diagnostics:
+                print(f'Fitting for trended sinusoid at period {fit_period:.5f} d')
+            
+            # Construct dataset for fitting trended sinusoid
+            kp_mags = (star_table.loc[sbv])['mag_kp']
+            kp_mag_errors = (star_table.loc[sbv])['mag_unc_kp']
+            kp_MJDs = self.epoch_MJDs_kp
+            
+            kp_det_epochs = np.where(kp_mags > 0.)
+            
+            kp_mags = kp_mags[kp_det_epochs]
+            kp_mag_errors = kp_mag_errors[kp_det_epochs]
+            kp_MJDs = kp_MJDs[kp_det_epochs]
+            
+            h_mags = (star_table.loc[sbv])['mag_h']
+            h_mag_errors = (star_table.loc[sbv])['mag_unc_h']
+            h_MJDs = self.epoch_MJDs_h
+            
+            h_det_epochs = np.where(h_mags > 0.)
+            
+            h_mags = h_mags[h_det_epochs]
+            h_mag_errors = h_mag_errors[h_det_epochs]
+            h_MJDs = h_MJDs[h_det_epochs]
+            
+            t0 = kp_MJDs[np.argmax(kp_mags)]
+            
+            mags = np.append(kp_mags, h_mags)
+            mag_errors = np.append(kp_mag_errors, h_mag_errors)
+            obs_days = np.append(kp_MJDs, h_MJDs)
+            obs_filts = np.append(
+                np.full_like(kp_MJDs, 'kp', dtype='|S2'),
+                np.full_like(h_MJDs, 'h', dtype='|S2'),
+            )
+            
+            (cos_amp_sig,
+             cos_amp,
+             cos_amp_sig1,) = self.fit_trended_sinusoid(
+                star_poly_trend_order, t0, fit_period,
+                mags, mag_errors,
+                obs_days, obs_filts,
+                mp_pool=mp_pool,
+                print_diagnostics=print_diagnostics,
+            )
+            
+            if print_diagnostics:
+                print(f'Cos Amp Sig = {cos_amp_sig:.5f}')
+            
+            cos_amp_sigs[sbv_index] = cos_amp_sig
+            cos_amps[sbv_index] = cos_amp
+            cos_amp_sig1s[sbv_index] = cos_amp_sig1
+            
+        star_amp_sig_table = Table(
+            [
+                LS_sbv_ids,
+                cos_amp_sigs,
+                cos_amps,
+                cos_amp_sig1s,
+            ],
+            names=(
+                'star_bin_var_ids',
+                'cos_amp_sigs',
+                'cos_amps',
+                'cos_amp_sig1_uncs',
+            )
+        )
+        
+        star_amp_sig_table.write(
+            f'{amp_sigs_dir}/{star}.h5',
+            path='data', compression=True,
+            overwrite=True,
+        )
+        star_amp_sig_table.write(
+            f'{amp_sigs_dir}/{star}.txt',
+            format='ascii.fixed_width',
+            overwrite=True,
+        )
+        
+        return
+    
     
     def compute_detectability(
             self, stars_list,
@@ -752,7 +755,7 @@ class bin_detectability(object):
             [stars_list, stars_passing_frac],
             names=['star', 'passing_frac'],
         )
-
+        
         bin_detect_table['passing_frac'].format = '.2f'
 
         bin_detect_table.write(out_bin_detect_table_root + '.txt',
