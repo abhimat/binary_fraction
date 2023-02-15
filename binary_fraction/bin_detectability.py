@@ -594,6 +594,9 @@ class bin_detectability(object):
             dtype=float,
         )
         
+        passing_sbvs_LS_sig_all = np.array([])
+        passing_sbvs_sin_amp_all = np.array([])
+        
         # Compute detectability for every star in specified sample
         for (star_index, star) in tqdm(enumerate(stars_list), total=len(stars_list)):
             # Read star model, LS, and amp sig tables
@@ -625,6 +628,8 @@ class bin_detectability(object):
             LS_sbv_ids = np.unique(star_out_LS_table['bin_var_id']).astype(int)
     
             passing_sbvs = []
+            passing_sbvs_LS_sig = []
+            passing_sbvs_sin_amp = []
             
             for sbv in LS_sbv_ids:
                 sbv_filter = np.where(star_out_LS_table['bin_var_id'] == sbv)
@@ -701,6 +706,8 @@ class bin_detectability(object):
                     print(f'\tSBV detected in search')
                 
                 passing_sbvs.append(sbv)
+                passing_sbvs_LS_sig.append(peak_sig)
+                passing_sbvs_sin_amp.append(peak_amp)
                 stars_passing_sbvs[star_index, sbv] = True
                 
                 if len(binPer_filt_results) > 0:
@@ -712,6 +719,13 @@ class bin_detectability(object):
                     stars_half_bin_per_detected_sbvs[star_index, sbv] = True
                     stars_half_bin_per_LS_sig_sbvs[star_index, sbv] =\
                         np.max(binPer_half_filt_results['LS_bs_sigs'])
+            
+            passing_sbvs_LS_sig_all = np.append(
+                passing_sbvs_LS_sig_all, np.array(passing_sbvs_LS_sig)
+            )
+            passing_sbvs_sin_amp_all = np.append(
+                passing_sbvs_sin_amp_all, np.array(passing_sbvs_sin_amp)
+            )
             
             if print_diagnostics:
                 print('Passing SBVs:')
@@ -764,6 +778,29 @@ class bin_detectability(object):
 
         bin_detect_table.write(out_bin_detect_table_root + '.h5',
                                format='hdf5', path='data', overwrite=True)
+        
+        # Binary detection sig and amp table
+        
+        # Contstruct output table
+        bin_sig_amp_table = Table(
+            [
+                passing_sbvs_LS_sig_all,
+                passing_sbvs_sin_amp_all,
+            ],
+            names=[
+                'LS_FA_sig',
+                'sin_amp_sig',
+            ],
+        )
+        
+        # Output table
+        bin_sig_amp_table.write(
+            out_bin_detect_table_root + '_sig_amp.txt',
+            format='ascii.fixed_width', overwrite=True)
+        
+        bin_sig_amp_table.write(
+            out_bin_detect_table_root + '_sig_amp.h5',
+            format='hdf5', path='data', overwrite=True)
         
         # Return final table
         return bin_detect_table
