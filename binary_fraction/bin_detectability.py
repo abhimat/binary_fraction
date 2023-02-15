@@ -15,6 +15,7 @@ import os
 import copy
 from tqdm import tqdm
 from multiprocessing.pool import Pool
+import schwimmbad
 
 class bin_detectability(object):
     """
@@ -180,6 +181,8 @@ class bin_detectability(object):
         """
         Run MCMC fit for trended sinusoid
         """
+        os.environ["OMP_NUM_THREADS"] = "1"
+        
         kp_obs_filt = np.where(obs_filts == b'kp')
         h_obs_filt = np.where(obs_filts == b'h')
         
@@ -298,7 +301,9 @@ class bin_detectability(object):
               (scale_mult * np.random.randn(nwalkers, ndim))
         
         # Set up sampler
-        mp_pool = Pool(self.num_cores)
+        # mp_pool = Pool(self.num_cores)
+        # mp_pool = schwimmbad.MultiPool(self.num_cores)
+        mp_pool = schwimmbad.MPIPool(self.num_cores)
         
         sampler = emcee.EnsembleSampler(
             nwalkers, ndim, mcmc_fit_obj.log_probability,
