@@ -386,7 +386,7 @@ class bin_detectability(object):
             
             # Go through each sbv for the given star
             # Compute amplitude only for most significant peak,
-            # if most sig peak is consistent with binary detection
+            # if most sig peak is consistent or not with binary detection
             
             inj_sbv_ids = star_table['star_bin_var_ids']
             LS_sbv_ids = np.unique(star_out_LS_table['bin_var_id']).astype(int)
@@ -441,12 +441,6 @@ class bin_detectability(object):
                 binPer_filt_results = sbv_LS_results[binPer_filt]
                 binPer_half_filt_results = sbv_LS_results[binPer_half_filt]
                 
-                if (len(binPer_filt_results) + len(binPer_half_filt_results)) == 0:
-                    if print_diagnostics:
-                        print('No periodic signal found at binary period')
-                    
-                    continue
-                
                 # Perform checks for LS significance and LS significance
                 matching_sigs = np.append(
                     binPer_filt_results['LS_bs_sigs'],
@@ -457,7 +451,7 @@ class bin_detectability(object):
                     binPer_half_filt_results['LS_periods'],
                 )
                 
-                peak_sig = np.max(matching_sigs)
+                peak_sig = np.max(sbv_LS_results['LS_bs_sigs'])
                 
                 if peak_sig < low_sig_check:
                     if print_diagnostics:
@@ -471,7 +465,9 @@ class bin_detectability(object):
                     print(f'\tNeed amplitude search')
                 
                 # Determine fit period
-                fit_period = matching_periods[np.argmax(matching_sigs)]
+                fit_period = (sbv_LS_results['LS_periods'])[
+                    np.argmax(sbv_LS_results['LS_bs_sigs'])
+                ]
                 
                 if print_diagnostics:
                     print(f'Fitting for trended sinusoid at period {fit_period:.5f} d')
