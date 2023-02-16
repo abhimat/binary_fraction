@@ -591,6 +591,7 @@ class bin_detectability(object):
             num_mock_bins=50,
             low_sig_check = 0.70,
             high_sig_check = 0.95,
+            min_amp_check = 3.0,
             amp_check = 20.0,
             out_bin_detect_table_root='./bin_detect',
             print_diagnostics=False,
@@ -612,6 +613,15 @@ class bin_detectability(object):
             dtype=bool,
         )
         
+        stars_direct_detection_detected_sbvs = np.zeros(
+            (len(stars_list), num_mock_bins),
+            dtype=bool,
+        )
+        stars_alias_detection_detected_sbvs = np.zeros(
+            (len(stars_list), num_mock_bins),
+            dtype=bool,
+        )
+        
         stars_half_bin_per_detected_sbvs = np.zeros(
             (len(stars_list), num_mock_bins),
             dtype=bool,
@@ -619,15 +629,6 @@ class bin_detectability(object):
         stars_full_bin_per_detected_sbvs = np.zeros(
             (len(stars_list), num_mock_bins),
             dtype=bool,
-        )
-        
-        stars_half_bin_per_LS_sig_sbvs = np.zeros(
-            (len(stars_list), num_mock_bins),
-            dtype=float,
-        )
-        stars_full_bin_per_LS_sig_sbvs = np.zeros(
-            (len(stars_list), num_mock_bins),
-            dtype=float,
         )
         
         passing_sbvs_LS_sig_all = np.array([])
@@ -696,14 +697,21 @@ class bin_detectability(object):
                 # Check for a signal at binary period and half of binary period
                 binPer_filt = np.where(np.logical_and(
                     sbv_LS_results['LS_periods'] >= mock_true_period * 0.99,
-                    sbv_LS_results['LS_periods'] <= mock_true_period * 1.01))
+                    sbv_LS_results['LS_periods'] <= mock_true_period * 1.01
+                ))
             
                 binPer_half_filt = np.where(np.logical_and(
                     sbv_LS_results['LS_periods'] >= (0.5*mock_true_period) * 0.99,
-                    sbv_LS_results['LS_periods'] <= (0.5*mock_true_period) * 1.01))
-        
+                    sbv_LS_results['LS_periods'] <= (0.5*mock_true_period) * 1.01
+                ))
+                
                 binPer_filt_results = sbv_LS_results[binPer_filt]
                 binPer_half_filt_results = sbv_LS_results[binPer_half_filt]
+                
+                # Check for signals that are not at either binary period
+                # or half binary period
+                
+                
                 
                 if (len(binPer_filt_results) + len(binPer_half_filt_results)) == 0:
                     if print_diagnostics:
@@ -716,14 +724,30 @@ class bin_detectability(object):
                     binPer_filt_results['LS_bs_sigs'],
                     binPer_half_filt_results['LS_bs_sigs'],
                 )
+                matching_powers = np.append(
+                    binPer_filt_results['LS_powers'],
+                    binPer_half_filt_results['LS_powers'],
+                )
+                matching_periods = np.append(
+                    binPer_filt_results['LS_periods'],
+                    binPer_half_filt_results['LS_periods'],
+                )
                 
-                peak_sig = np.max(matching_sigs)
-                
+                peak_sig = np.max(sbv_LS_results['LS_bs_sigs'])
+                peak_period = (sbv_LS_results['LS_periods'])[
+                    np.argmax(sbv_LS_results['LS_powers'])
+                ]
                 peak_amp = (star_amp_sig_table.loc[sbv])['cos_amp_sigs']
                 
                 if print_diagnostics:
                     print(f'Peak delta mag / med mag unc = {peak_amp:.3f}')
                     print(f'Peak BS sig = {(peak_sig*100):.3f}%')
+                
+                if peak_amp < min_amp_check:
+                    if print_diagnostics:
+                        print('Amplitude < min amp of {min_amp_check}')
+                    
+                    continue
                 
                 if peak_sig < low_sig_check:
                     if print_diagnostics:
@@ -737,6 +761,44 @@ class bin_detectability(object):
                     
                     continue
                 
+                # Check if most significant two peaks are consistent
+                # with binary detection.
+                # Make relevant flags for direct / alias detection and
+                # full / half period detection
+                
+                detection_direct = False
+                detection_alias = False
+                detection_full_period = False
+                detection_half_period = False
+                
+                sorted_powers = np.sort(sbv_LS_results['LS_powers'])
+                
+                if sorted_powers[-1] in matching_powers:
+                    detection_direct = True
+                    
+                    if sorted_powers[-1] in binPer_filt_results['LS_powers']:
+                        detection_full_period = True
+                    elif sorted_powers[-1] in binPer_half_filt_results['LS_powers']:
+                        detection_half_period = True
+                    
+                elif len(sbv_LS_results) > 1 and sorted_powers[-2] in matching_powers:
+                    detection_alias = True
+                    
+                    if sorted_powers[-2] in binPer_filt_results['LS_powers']:
+                        detection_full_period = True
+                    elif sorted_powers[-2] in binPer_half_filt_results['LS_powers']:
+                        detection_half_period = True
+                
+                # Final check: is most significant peak a detection / alias of
+                # binary signal?
+                
+                if not (detection_direct or detection_alias):
+                    if print_diagnostics:
+                        print('Most significant peak not a detection / alias of binary signal')
+                    
+                    continue
+                
+                
                 # Success
                 if print_diagnostics:
                     print(f'\tSBV detected in search')
@@ -746,15 +808,12 @@ class bin_detectability(object):
                 passing_sbvs_sin_amp.append(peak_amp)
                 stars_passing_sbvs[star_index, sbv] = True
                 
-                if len(binPer_filt_results) > 0:
-                    stars_full_bin_per_detected_sbvs[star_index, sbv] = True
-                    stars_full_bin_per_LS_sig_sbvs[star_index, sbv] =\
-                        np.max(binPer_filt_results['LS_bs_sigs'])
+                stars_direct_detection_detected_sbvs[star_index, sbv] = detection_direct
+                stars_alias_detection_detected_sbvs[star_index, sbv] = detection_alias
                 
-                if len(binPer_half_filt_results) > 0:
-                    stars_half_bin_per_detected_sbvs[star_index, sbv] = True
-                    stars_half_bin_per_LS_sig_sbvs[star_index, sbv] =\
-                        np.max(binPer_half_filt_results['LS_bs_sigs'])
+                stars_full_bin_per_detected_sbvs[star_index, sbv] = detection_full_period
+                stars_half_bin_per_detected_sbvs[star_index, sbv] = detection_half_period
+                
             
             passing_sbvs_LS_sig_all = np.append(
                 passing_sbvs_LS_sig_all, np.array(passing_sbvs_LS_sig)
@@ -769,11 +828,9 @@ class bin_detectability(object):
                 
                 print('Half binary orb. period detections')
                 print(stars_half_bin_per_detected_sbvs)
-                print(stars_half_bin_per_LS_sig_sbvs)
                 print('---')
                 print('Full binary orb. period detections')
                 print(stars_full_bin_per_detected_sbvs)
-                print(stars_full_bin_per_LS_sig_sbvs)
             
             # Calculate the passing fraction of all SBVs for this star
             passing_frac = len(passing_sbvs) / len(inj_sbv_ids)
@@ -798,20 +855,20 @@ class bin_detectability(object):
         bin_detect_table = Table(
             [
                 stars_list, stars_passing_frac, stars_passing_sbvs,
+                stars_direct_detection_detected_sbvs,
+                stars_alias_detection_detected_sbvs,
                 stars_full_bin_per_detected_sbvs,
                 stars_half_bin_per_detected_sbvs,
-                stars_full_bin_per_LS_sig_sbvs,
-                stars_half_bin_per_LS_sig_sbvs,
             ],
             names=[
                 'star', 'passing_frac', 'passing_sbvs',
+                'direct_detection_detected_sbvs',
+                'alias_detection_detected_sbvs',
                 'full_bin_per_detected_sbvs',
                 'half_bin_per_detected_sbvs',
-                'full_bin_per_LS_sig_sbvs',
-                'half_bin_per_LS_sig_sbvs',
             ],
         )
-
+        
         bin_detect_table.write(out_bin_detect_table_root + '.h5',
                                format='hdf5', path='data', overwrite=True)
         
