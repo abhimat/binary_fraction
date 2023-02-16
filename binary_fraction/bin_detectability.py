@@ -364,10 +364,10 @@ class bin_detectability(object):
         os.makedirs(amp_sigs_dir, exist_ok=True)
         
         # Compute detectability for every star in specified sample
-        # If cos amp sig calculations already complete for star, return
-        if os.path.isfile(f'{amp_sigs_dir}/{star}.h5'):
-            print(f'Amp sigs for {star} already computed')
-            return
+        # # If cos amp sig calculations already complete for star, return
+        # if os.path.isfile(f'{amp_sigs_dir}/{star}.h5'):
+        #     print(f'Amp sigs for {star} already computed')
+        #     return
         
         print(f'Computing amp sigs for {star}')
         
@@ -400,6 +400,9 @@ class bin_detectability(object):
         cos_amp_sigs = np.zeros(len(LS_sbv_ids))
         cos_amps = np.zeros(len(LS_sbv_ids))
         cos_amp_sig1s = np.zeros(len(LS_sbv_ids))
+        bin_per_match = np.full(
+            len(LS_sbv_ids), False, dtype=bool,
+        )
         
         if print_diagnostics:
             print('\n===')
@@ -451,6 +454,10 @@ class bin_detectability(object):
                 binPer_filt_results['LS_bs_sigs'],
                 binPer_half_filt_results['LS_bs_sigs'],
             )
+            matching_powers = np.append(
+                binPer_filt_results['LS_powers'],
+                binPer_half_filt_results['LS_powers'],
+            )
             matching_periods = np.append(
                 binPer_filt_results['LS_periods'],
                 binPer_half_filt_results['LS_periods'],
@@ -475,6 +482,23 @@ class bin_detectability(object):
             fit_period = (sbv_LS_results['LS_periods'])[
                 np.argmax(sbv_LS_results['LS_powers'])
             ]
+            
+            
+            # Check if most significant two peaks are consistent
+            # with binary detection
+            if len(sbv_LS_results) > 1:
+                sorted_powers = np.sort(sbv_LS_results['LS_powers'])
+                if (sorted_powers[-1] in matching_powers or
+                    sorted_powers[-2] in matching_powers):
+                    if print_diagnostics:
+                        print('Most significant peaks are from binary period')
+                    bin_per_match[sbv_index] = True
+            else:
+                if fit_period in matching_periods:
+                    if print_diagnostics:
+                        print('Most significant period is binary period')
+                    bin_per_match[sbv_index] = True
+                
             
             if print_diagnostics:
                 print(f'Fitting for trended sinusoid at period {fit_period:.5f} d')
@@ -533,12 +557,14 @@ class bin_detectability(object):
                 cos_amp_sigs,
                 cos_amps,
                 cos_amp_sig1s,
+                bin_per_match,
             ],
             names=(
                 'star_bin_var_ids',
                 'cos_amp_sigs',
                 'cos_amps',
                 'cos_amp_sig1_uncs',
+                'bin_per_match',
             )
         )
         
