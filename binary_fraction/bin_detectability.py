@@ -468,10 +468,12 @@ class bin_detectability(object):
             if print_diagnostics:
                 print(f'\tSBV detected in search')
                 print(f'\tNeed amplitude search')
+                print('SBV LS Results Table')
+                print(sbv_LS_results)
             
             # Determine fit period
             fit_period = (sbv_LS_results['LS_periods'])[
-                np.argmax(sbv_LS_results['LS_bs_sigs'])
+                np.argmax(sbv_LS_results['LS_powers'])
             ]
             
             if print_diagnostics:
