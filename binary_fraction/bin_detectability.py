@@ -580,7 +580,7 @@ class bin_detectability(object):
                 overwrite=True,
             )
         except Exception as ex:
-            print('Writing .txt table raised exception:\n{ex}')
+            print(f'Writing .txt table raised exception:\n{ex}')
         
         
         return
