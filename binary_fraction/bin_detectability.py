@@ -573,11 +573,15 @@ class bin_detectability(object):
             path='data', compression=True,
             overwrite=True,
         )
-        star_amp_sig_table.write(
-            f'{amp_sigs_dir}/{star}.txt',
-            format='ascii.fixed_width',
-            overwrite=True,
-        )
+        try:
+            star_amp_sig_table.write(
+                f'{amp_sigs_dir}/{star}.txt',
+                format='ascii.fixed_width',
+                overwrite=True,
+            )
+        except Exception as ex:
+            print('Writing .txt table raised exception:\n{ex}')
+        
         
         return
     
