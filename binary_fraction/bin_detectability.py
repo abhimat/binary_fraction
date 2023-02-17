@@ -985,14 +985,16 @@ class bin_detectability(object):
                 sbv_LS_results = star_out_LS_table[sbv_filter]
                 
                 max_LS_power = np.max(sbv_LS_results['LS_powers'])
-                max_LS_index = np.argmax(sbv_LS_results['LS_powers'])\
+                max_LS_index = np.argmax(sbv_LS_results['LS_powers'])
                 
-                max_LS_sig = (sbv_LS_results['LS_powers'])[max_LS_index]
+                max_LS_sig = (sbv_LS_results['LS_bs_sigs'])[max_LS_index]
                 
                 # Determine sin amp significance
                 amp_sig_row = star_amp_sig_table.loc[sbv]
                 max_sin_amp_sig = amp_sig_row['cos_amp_sigs']
                 
+                if max_sin_amp_sig == 0.0:
+                    continue
                 
                 # Determine detection characteristics
                 detection_direct = bin_detect_row['direct_detection_detected_sbvs'][sbv]
