@@ -900,6 +900,7 @@ class bin_detectability(object):
     
     def costruct_sig_amp_table(
             self,
+            skip_stars=['irs16SW', 'S4-258', 'S2-36'],
             bin_detect_table_root='./bin_detect',
             print_diagnostics=False,
         ):
@@ -932,6 +933,11 @@ class bin_detectability(object):
                 enumerate(bin_detect_table['star']),
                 total=len(bin_detect_table),
             ):
+            # Skip adding any detections from stars that are in skip_stars
+            # i.e., those that already contain a strong known binary signal
+            if star in skip_stars:
+                continue
+            
             # Pull up binary detection row and
             # read SBV, LS sig, and amp sig tables for star
             bin_detect_row = bin_detect_table.loc[star]
