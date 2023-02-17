@@ -897,3 +897,182 @@ class bin_detectability(object):
         
         # Return final table
         return bin_detect_table
+    
+    def costruct_sig_amp_table(
+            self,
+            bin_detect_table_root='./bin_detect',
+            print_diagnostics=False,
+        ):
+        
+        # Read in bin_detect_table
+        bin_detect_table = Table.read(
+            bin_detect_table_root + '.h5',
+            format='hdf5', path='data',
+        )
+        bin_detect_table.add_index('star')
+        
+        
+        
+        passing_sbvs_LS_sig_all = np.array([])
+        passing_sbvs_sin_amp_all = np.array([])
+        
+        binary_detections_col = np.array([], dtype=bool)
+        
+        LS_sigs_col = np.array([])
+        sin_amp_sigs_col = np.array([])
+        
+        binary_detections_col = np.array([], dtype=bool)
+        detections_direct_col = np.array([], dtype=bool)
+        detections_alias_col = np.array([], dtype=bool)
+        
+        detections_full_per_col = np.array([], dtype=bool)
+        detections_half_per_col = np.array([], dtype=bool)
+        
+        for (star_index, star) in tqdm(
+                enumerate(bin_detect_table['star']),
+                total=len(bin_detect_table),
+            ):
+            # Pull up binary detection row and
+            # read SBV, LS sig, and amp sig tables for star
+            bin_detect_row = bin_detect_table.loc[star]
+            
+            star_table = Table.read(
+                f'{self.sbv_dir}/{star}.h5',
+                path='data')
+            star_table.add_index('star_bin_var_ids')
+            
+            star_out_LS_table = Table.read(
+                f'{self.sbv_dir}/LS_Periodicity_Out/{star}.h5',
+                path='data',
+            )
+            
+            star_amp_sig_table = Table.read(
+                f'{self.sbv_dir}/amp_sigs/{star}.h5',
+                path='data',
+            )
+            star_amp_sig_table.add_index('star_bin_var_ids')
+            
+            if print_diagnostics:    
+                print(bin_detect_row)
+                print(star_table)
+                print(star_out_LS_table)
+                print(star_amp_sig_table)
+            
+            # Pull out only SBVs that had any peaks detected in LS search
+            
+            LS_sbv_ids = np.unique(star_out_LS_table['bin_var_id']).astype(int)
+            
+            
+            LS_sigs_star = []
+            sin_amp_sigs_star = []
+            
+            binary_detections_star = []
+            detections_direct_star = []
+            detections_alias_star = []
+            
+            detections_full_per_star = []
+            detections_half_per_star = []
+            
+            for sbv in LS_sbv_ids:
+                # Determine max LS significance
+                sbv_filter = np.where(star_out_LS_table['bin_var_id'] == sbv)
+                sbv_LS_results = star_out_LS_table[sbv_filter]
+                
+                max_LS_power = np.max(sbv_LS_results['LS_powers'])
+                max_LS_index = np.argmax(sbv_LS_results['LS_powers'])\
+                
+                max_LS_sig = (sbv_LS_results['LS_powers'])[max_LS_index]
+                
+                # Determine sin amp significance
+                amp_sig_row = star_amp_sig_table.loc[sbv]
+                max_sin_amp_sig = amp_sig_row['cos_amp_sigs']
+                
+                
+                # Determine detection characteristics
+                detection_direct = bin_detect_row['direct_detection_detected_sbvs'][sbv]
+                detection_alias = bin_detect_row['alias_detection_detected_sbvs'][sbv]
+                
+                binary_detection = (detection_direct or detection_alias)
+                
+                detection_full_period = bin_detect_row['full_bin_per_detected_sbvs'][sbv]
+                detection_half_period = bin_detect_row['half_bin_per_detected_sbvs'][sbv]
+                
+                # Store out all quantities into lists for this star
+                LS_sigs_star.append(max_LS_sig)
+                sin_amp_sigs_star.append(max_sin_amp_sig)
+                
+                binary_detections_star.append(bool(binary_detection))
+                detections_direct_star.append(bool(detection_direct))
+                detections_alias_star.append(bool(detection_alias))
+                
+                detections_full_per_star.append(bool(detection_full_period))
+                detections_half_per_star.append(bool(detection_half_period))
+            
+            # Append star detections onto complete column arrays
+            LS_sigs_col = np.append(
+                LS_sigs_col,
+                np.array(LS_sigs_star),
+            )
+            sin_amp_sigs_col = np.append(
+                sin_amp_sigs_col,
+                np.array(sin_amp_sigs_star),
+            )
+            
+            binary_detections_col = np.append(
+                binary_detections_col,
+                np.array(binary_detections_star, dtype=bool),
+            )
+            detections_direct_col = np.append(
+                detections_direct_col,
+                np.array(detections_direct_star, dtype=bool),
+            )
+            detections_alias_col = np.append(
+                detections_alias_col,
+                np.array(detections_alias_star, dtype=bool),
+            )
+            
+            detections_full_per_col = np.append(
+                detections_full_per_col,
+                np.array(detections_full_per_star, dtype=bool),
+            )
+            detections_half_per_col = np.append(
+                detections_half_per_col,
+                np.array(detections_half_per_star, dtype=bool),
+            )
+        
+        # Construct output table
+        sig_amp_table = Table(
+            [
+                LS_sigs_col,
+                sin_amp_sigs_col,
+                binary_detections_col,
+                detections_direct_col,
+                detections_alias_col,
+                detections_full_per_col,
+                detections_half_per_col,
+            ],
+            names=[
+                'LS_sigs',
+                'sin_amp_sigs',
+                'binary_detections',
+                'detections_direct',
+                'detections_alias',
+                'detections_full_per',
+                'detections_half_per',
+            ],
+        )
+        
+        if print_diagnostics:
+            print(f'sig_amp_table:\n{sig_amp_table}')
+        
+        # Write and return table
+        sig_amp_table.write(
+            bin_detect_table_root + '_sig_amp.txt',
+            format='ascii.fixed_width', overwrite=True)
+        
+        sig_amp_table.write(
+            bin_detect_table_root + '_sig_amp.h5',
+            format='hdf5', path='data', overwrite=True)
+        
+        return sig_amp_table
+
