@@ -912,8 +912,6 @@ class bin_detectability(object):
         )
         bin_detect_table.add_index('star')
         
-        
-        
         passing_sbvs_LS_sig_all = np.array([])
         passing_sbvs_sin_amp_all = np.array([])
         
@@ -965,21 +963,39 @@ class bin_detectability(object):
                 print(star_amp_sig_table)
             
             # Pull out only SBVs that had any peaks detected in LS search
-            
             LS_sbv_ids = np.unique(star_out_LS_table['bin_var_id']).astype(int)
             
+            # Go through all the LS SBVs
+            sbv_ids = star_table['star_bin_var_ids']
             
-            LS_sigs_star = []
-            sin_amp_sigs_star = []
+            total_SBVs = len(sbv_ids)
             
-            binary_detections_star = []
-            detections_direct_star = []
-            detections_alias_star = []
+            LS_sigs_star = np.zeros(total_SBVs)
+            sin_amp_sigs_star = np.zeros(total_SBVs)
             
-            detections_full_per_star = []
-            detections_half_per_star = []
+            binary_detections_star = np.zeros(total_SBVs, dtype=bool)
+            detections_direct_star = np.zeros(total_SBVs, dtype=bool)
+            detections_alias_star = np.zeros(total_SBVs, dtype=bool)
             
-            for sbv in LS_sbv_ids:
+            detections_full_per_star = np.zeros(total_SBVs, dtype=bool)
+            detections_half_per_star = np.zeros(total_SBVs, dtype=bool)
+            
+            for sbv in sbv_ids:
+                # First check if SBV is even in ids detected in LS search
+                # If not, then store 0s for the SBV row and proceed
+                if sbv not in LS_sbv_ids:
+                    LS_sigs_star[sbv] = 0.0
+                    sin_amp_sigs_star[sbv] = 0.0
+                
+                    binary_detections_star[sbv] = False
+                    detections_direct_star[sbv] = False
+                    detections_alias_star[sbv] = False
+                
+                    detections_full_per_star[sbv] = False
+                    detections_half_per_star[sbv] = False
+                    
+                    continue
+                
                 # Determine max LS significance
                 sbv_filter = np.where(star_out_LS_table['bin_var_id'] == sbv)
                 sbv_LS_results = star_out_LS_table[sbv_filter]
@@ -1006,15 +1022,15 @@ class bin_detectability(object):
                 detection_half_period = bin_detect_row['half_bin_per_detected_sbvs'][sbv]
                 
                 # Store out all quantities into lists for this star
-                LS_sigs_star.append(max_LS_sig)
-                sin_amp_sigs_star.append(max_sin_amp_sig)
+                LS_sigs_star[sbv] = max_LS_sig
+                sin_amp_sigs_star[sbv] = max_sin_amp_sig
                 
-                binary_detections_star.append(bool(binary_detection))
-                detections_direct_star.append(bool(detection_direct))
-                detections_alias_star.append(bool(detection_alias))
+                binary_detections_star[sbv] = bool(binary_detection)
+                detections_direct_star[sbv] = bool(detection_direct)
+                detections_alias_star[sbv] = bool(detection_alias)
                 
-                detections_full_per_star.append(bool(detection_full_period))
-                detections_half_per_star.append(bool(detection_half_period))
+                detections_full_per_star[sbv] = bool(detection_full_period)
+                detections_half_per_star[sbv] = bool(detection_half_period)
             
             # Append star detections onto complete column arrays
             LS_sigs_col = np.append(
