@@ -16,6 +16,7 @@ import copy
 from tqdm import tqdm
 from multiprocessing.pool import Pool
 import schwimmbad
+from scipy.spatial import KDTree
 
 class bin_detectability(object):
     """
@@ -586,7 +587,7 @@ class bin_detectability(object):
         return
     
     
-    def compute_detectability(
+    def compute_detectability_basic_sig_checks(
             self, stars_list,
             num_mock_bins=50,
             low_sig_check = 0.70,
@@ -1332,3 +1333,323 @@ class bin_detectability(object):
             print(hist_table)
         
         return hist_table
+    
+    def compute_detectability(
+            self, stars_list,
+            num_mock_bins=100,
+            sig_hist_table='../bin_detectability/false_true_hist.h5',
+            detection_sig_levels=[
+                '4 sig', '5 sig', 'gt 5 sig',
+            ],
+            out_bin_detect_table_root='./bin_detect',
+            print_diagnostics=False,
+        ):
+        """
+        Compute the detectability of the injected light curves for the
+        stars provided in stars_list
+        
+        Parameters
+        ----------
+        stars_list : list[str]
+            List of star names to compute the detectability for
+        """
+        
+        # Read in significance region table
+        sig_hist_table = Table.read(
+            sig_hist_table,
+            format='hdf5', path='data',
+        )
+        
+        # Construct a kd-tree to perform quick nearest-neighbor lookup
+        sig_hist_neighbor_kdtree = KDTree(list(zip(
+            sig_hist_table['grid_cent_x'],
+            sig_hist_table['grid_cent_y'],
+        )))
+        
+        if print_diagnostics:
+            near_neighbor = sig_hist_neighbor_kdtree.query(
+                [25, 99.5], k=1,
+            )
+            neighbor_dist, neighbor_index = near_neighbor
+            
+            print(neighbor_dist)
+            print(neighbor_index)
+            print(sig_hist_table[neighbor_index])
+        
+        # Create empty arrays for storing outputs
+        stars_passing_frac = np.zeros(len(stars_list))
+        stars_passing_sbvs = np.zeros(
+            (len(stars_list), num_mock_bins),
+            dtype=bool,
+        )
+        
+        stars_direct_detection_detected_sbvs = np.zeros(
+            (len(stars_list), num_mock_bins),
+            dtype=bool,
+        )
+        stars_alias_detection_detected_sbvs = np.zeros(
+            (len(stars_list), num_mock_bins),
+            dtype=bool,
+        )
+        
+        stars_half_bin_per_detected_sbvs = np.zeros(
+            (len(stars_list), num_mock_bins),
+            dtype=bool,
+        )
+        stars_full_bin_per_detected_sbvs = np.zeros(
+            (len(stars_list), num_mock_bins),
+            dtype=bool,
+        )
+        
+        passing_sbvs_LS_sig_all = np.array([])
+        passing_sbvs_sin_amp_all = np.array([])
+        
+        # Compute detectability for every star in specified sample
+        for (star_index, star) in tqdm(enumerate(stars_list), total=len(stars_list)):
+            # Read star model, LS, and amp sig tables
+            star_table = Table.read(
+                f'{self.sbv_dir}/{star}.h5',
+                path='data')
+            star_table.add_index('star_bin_var_ids')
+            
+            star_out_LS_table = Table.read(
+                f'{self.sbv_dir}/LS_Periodicity_Out/{star}.h5',
+                path='data',
+            )
+            
+            star_amp_sig_table = Table.read(
+                f'{self.sbv_dir}/amp_sigs/{star}.h5',
+                path='data',
+            )
+            star_amp_sig_table.add_index('star_bin_var_ids')
+            
+            # Go through each unique mock index for the given star
+            
+            if print_diagnostics:
+                print('\n===')
+                print(f'Current star: {star}')
+                print(star_table)
+                print(star_out_LS_table)
+            
+            inj_sbv_ids = star_table['star_bin_var_ids']
+            LS_sbv_ids = np.unique(star_out_LS_table['bin_var_id']).astype(int)
+    
+            passing_sbvs = []
+            passing_sbvs_LS_sig = []
+            passing_sbvs_sin_amp = []
+            
+            for sbv in LS_sbv_ids:
+                sbv_filter = np.where(star_out_LS_table['bin_var_id'] == sbv)
+                sbv_LS_results = star_out_LS_table[sbv_filter]
+        
+                mock_bin_id = (star_table.loc[sbv])['selected_bin_ids']
+                mock_bin_row = self.model_sb_params_table.loc[mock_bin_id]
+                mock_bin_lc_row = self.model_lc_params_table.loc[mock_bin_id]
+                
+                mock_true_period = mock_bin_row['binary_period']
+        
+                if print_diagnostics:
+                    print('---')
+                    print(f'SBV ID: {sbv}')
+                    print(f'True Binary Period: {mock_true_period:.3f} d')
+        
+                # Check for long period getting aliased
+                longPer_filt = np.where(
+                    sbv_LS_results['LS_periods'] >= self.longPer_boundary)
+                longPer_filt_results = sbv_LS_results[longPer_filt]
+                
+                if len(longPer_filt_results) > 0:
+                    if print_diagnostics:
+                        print('Long period alias check failing')
+                    
+                    continue
+                
+                # Check for a signal at binary period and half of binary period
+                binPer_filt = np.where(np.logical_and(
+                    sbv_LS_results['LS_periods'] >= mock_true_period * 0.99,
+                    sbv_LS_results['LS_periods'] <= mock_true_period * 1.01
+                ))
+            
+                binPer_half_filt = np.where(np.logical_and(
+                    sbv_LS_results['LS_periods'] >= (0.5*mock_true_period) * 0.99,
+                    sbv_LS_results['LS_periods'] <= (0.5*mock_true_period) * 1.01
+                ))
+                
+                binPer_filt_results = sbv_LS_results[binPer_filt]
+                binPer_half_filt_results = sbv_LS_results[binPer_half_filt]
+                
+                # Check for signals that are not at either binary period
+                # or half binary period
+                if (len(binPer_filt_results) + len(binPer_half_filt_results)) == 0:
+                    if print_diagnostics:
+                        print('No periodic signal found at binary period')
+                    
+                    continue
+                
+                # Perform checks for LS significance and LS significance
+                matching_sigs = np.append(
+                    binPer_filt_results['LS_bs_sigs'],
+                    binPer_half_filt_results['LS_bs_sigs'],
+                )
+                matching_powers = np.append(
+                    binPer_filt_results['LS_powers'],
+                    binPer_half_filt_results['LS_powers'],
+                )
+                matching_periods = np.append(
+                    binPer_filt_results['LS_periods'],
+                    binPer_half_filt_results['LS_periods'],
+                )
+                
+                peak_sig = np.max(sbv_LS_results['LS_bs_sigs'])
+                peak_period = (sbv_LS_results['LS_periods'])[
+                    np.argmax(sbv_LS_results['LS_powers'])
+                ]
+                peak_amp = (star_amp_sig_table.loc[sbv])['cos_amp_sigs']
+                
+                # Check if most significant two peaks are consistent
+                # with binary detection.
+                # Make relevant flags for direct / alias detection and
+                # full / half period detection
+                
+                detection_direct = False
+                detection_alias = False
+                detection_full_period = False
+                detection_half_period = False
+                
+                sorted_powers = np.sort(sbv_LS_results['LS_powers'])
+                
+                if sorted_powers[-1] in matching_powers:
+                    detection_direct = True
+                    
+                    if sorted_powers[-1] in binPer_filt_results['LS_powers']:
+                        detection_full_period = True
+                    elif sorted_powers[-1] in binPer_half_filt_results['LS_powers']:
+                        detection_half_period = True
+                    
+                elif len(sbv_LS_results) > 1 and sorted_powers[-2] in matching_powers:
+                    detection_alias = True
+                    
+                    if sorted_powers[-2] in binPer_filt_results['LS_powers']:
+                        detection_full_period = True
+                    elif sorted_powers[-2] in binPer_half_filt_results['LS_powers']:
+                        detection_half_period = True
+                
+                # Check to see if most significant peak is a detection / alias
+                # of binary signal?
+                if not (detection_direct or detection_alias):
+                    if print_diagnostics:
+                        print('Most significant peak not a detection / alias of binary signal')
+                    
+                    continue
+                
+                # Check sig hist table
+                near_neighbor = sig_hist_neighbor_kdtree.query(
+                    [peak_amp, peak_sig], k=1,
+                )
+                neighbor_dist, neighbor_index = near_neighbor
+                sig_level = sig_hist_table[neighbor_index]['H_false_sig_levels']
+                
+                if sig_level not in detection_sig_levels:
+                    if print_diagnostics:
+                        print('Peak not significant enough')
+                    
+                    continue
+                
+                # Success
+                if print_diagnostics:
+                    print(f'\tSBV detected in search')
+                
+                passing_sbvs.append(sbv)
+                passing_sbvs_LS_sig.append(peak_sig)
+                passing_sbvs_sin_amp.append(peak_amp)
+                stars_passing_sbvs[star_index, sbv] = True
+                
+                stars_direct_detection_detected_sbvs[star_index, sbv] = detection_direct
+                stars_alias_detection_detected_sbvs[star_index, sbv] = detection_alias
+                
+                stars_full_bin_per_detected_sbvs[star_index, sbv] = detection_full_period
+                stars_half_bin_per_detected_sbvs[star_index, sbv] = detection_half_period
+                
+            
+            passing_sbvs_LS_sig_all = np.append(
+                passing_sbvs_LS_sig_all, np.array(passing_sbvs_LS_sig)
+            )
+            passing_sbvs_sin_amp_all = np.append(
+                passing_sbvs_sin_amp_all, np.array(passing_sbvs_sin_amp)
+            )
+            
+            if print_diagnostics:
+                print('Passing SBVs:')
+                print(passing_sbvs)
+                
+                print('Half binary orb. period detections')
+                print(stars_half_bin_per_detected_sbvs)
+                print('---')
+                print('Full binary orb. period detections')
+                print(stars_full_bin_per_detected_sbvs)
+            
+            # Calculate the passing fraction of all SBVs for this star
+            passing_frac = len(passing_sbvs) / len(inj_sbv_ids)
+            stars_passing_frac[star_index] = passing_frac
+            
+        # Output a table with binary detections
+        
+        # ascii tables can't output the multi-dimensional columns,
+        # so write an output table without those columns in ascii
+        bin_detect_table = Table(
+            [stars_list, stars_passing_frac],
+            names=['star', 'passing_frac'],
+        )
+        
+        bin_detect_table['passing_frac'].format = '.2f'
+
+        bin_detect_table.write(out_bin_detect_table_root + '.txt',
+                               format='ascii.fixed_width', overwrite=True)
+        
+        # Can include multi-dimensional columns in HDF5,
+        # so including those columns in this output
+        bin_detect_table = Table(
+            [
+                stars_list, stars_passing_frac, stars_passing_sbvs,
+                stars_direct_detection_detected_sbvs,
+                stars_alias_detection_detected_sbvs,
+                stars_full_bin_per_detected_sbvs,
+                stars_half_bin_per_detected_sbvs,
+            ],
+            names=[
+                'star', 'passing_frac', 'passing_sbvs',
+                'direct_detection_detected_sbvs',
+                'alias_detection_detected_sbvs',
+                'full_bin_per_detected_sbvs',
+                'half_bin_per_detected_sbvs',
+            ],
+        )
+        
+        bin_detect_table.write(out_bin_detect_table_root + '.h5',
+                               format='hdf5', path='data', overwrite=True)
+        
+        # Binary detection sig and amp table
+        
+        # Contstruct output table
+        bin_sig_amp_table = Table(
+            [
+                passing_sbvs_LS_sig_all,
+                passing_sbvs_sin_amp_all,
+            ],
+            names=[
+                'LS_FA_sig',
+                'sin_amp_sig',
+            ],
+        )
+        
+        # Output table
+        bin_sig_amp_table.write(
+            out_bin_detect_table_root + '_sig_amp.txt',
+            format='ascii.fixed_width', overwrite=True)
+        
+        bin_sig_amp_table.write(
+            out_bin_detect_table_root + '_sig_amp.h5',
+            format='hdf5', path='data', overwrite=True)
+        
+        # Return final table
+        return bin_detect_table
