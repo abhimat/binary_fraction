@@ -984,22 +984,47 @@ class bin_detectability(object):
                 # First check if SBV is even in ids detected in LS search
                 # If not, then store 0s for the SBV row and proceed
                 if sbv not in LS_sbv_ids:
+                    if print_diagnostics:
+                        print('Nothing detected in LS search for this star')
+                    
                     LS_sigs_star[sbv] = 0.0
                     sin_amp_sigs_star[sbv] = 0.0
-                
+                    
                     binary_detections_star[sbv] = False
                     detections_direct_star[sbv] = False
                     detections_alias_star[sbv] = False
+                    
+                    detections_full_per_star[sbv] = False
+                    detections_half_per_star[sbv] = False
+                    
+                    continue
                 
+                # Read in LS results for this SBV
+                sbv_filter = np.where(star_out_LS_table['bin_var_id'] == sbv)
+                sbv_LS_results = star_out_LS_table[sbv_filter]
+                
+                # Check for long period getting aliased
+                longPer_filt = np.where(
+                    sbv_LS_results['LS_periods'] >= self.longPer_boundary)
+                longPer_filt_results = sbv_LS_results[longPer_filt]
+                
+                if len(longPer_filt_results) > 0:
+                    if print_diagnostics:
+                        print('Long period alias check failing')
+                    
+                    LS_sigs_star[sbv] = 0.0
+                    sin_amp_sigs_star[sbv] = 0.0
+                    
+                    binary_detections_star[sbv] = False
+                    detections_direct_star[sbv] = False
+                    detections_alias_star[sbv] = False
+                    
                     detections_full_per_star[sbv] = False
                     detections_half_per_star[sbv] = False
                     
                     continue
                 
                 # Determine max LS significance
-                sbv_filter = np.where(star_out_LS_table['bin_var_id'] == sbv)
-                sbv_LS_results = star_out_LS_table[sbv_filter]
-                
                 max_LS_power = np.max(sbv_LS_results['LS_powers'])
                 max_LS_index = np.argmax(sbv_LS_results['LS_powers'])
                 
@@ -1010,6 +1035,16 @@ class bin_detectability(object):
                 max_sin_amp_sig = amp_sig_row['cos_amp_sigs']
                 
                 if max_sin_amp_sig == 0.0:
+                    LS_sigs_star[sbv] = 0.0
+                    sin_amp_sigs_star[sbv] = 0.0
+                    
+                    binary_detections_star[sbv] = False
+                    detections_direct_star[sbv] = False
+                    detections_alias_star[sbv] = False
+                    
+                    detections_full_per_star[sbv] = False
+                    detections_half_per_star[sbv] = False
+                    
                     continue
                 
                 # Determine detection characteristics
