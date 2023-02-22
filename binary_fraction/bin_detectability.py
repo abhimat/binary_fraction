@@ -1134,4 +1134,201 @@ class bin_detectability(object):
             format='hdf5', path='data', overwrite=True)
         
         return sig_amp_table
+    
+    def construct_sig_hists(
+            self,
+            sig_amp_table_root='./bin_detect',
+            print_diagnostics=False,
+            LS_sig_bin_size = 2,
+            sin_sig_bin_size = 4,
+        ):
+        
+        table_name = f'{sig_amp_table_root}_sig_amp.h5'
 
+        SBV_run_table = Table.read(
+            table_name,
+            format='hdf5', path='data'
+        )
+        
+        # Cut out true / false detections
+        true_det_sig_amp_table = SBV_run_table[
+            SBV_run_table['binary_detections']
+        ]
+        false_det_sig_amp_table = SBV_run_table[
+            np.logical_not(SBV_run_table['binary_detections'])
+        ]
+
+        true_detections_sin_amp_sigs = np.abs(true_det_sig_amp_table['sin_amp_sigs'])
+        true_detections_LS_sig = true_det_sig_amp_table['LS_sigs'] * 100.0
+
+        false_detections_sin_amp_sigs = np.abs(false_det_sig_amp_table['sin_amp_sigs'])
+        false_detections_LS_sig = false_det_sig_amp_table['LS_sigs'] * 100.0
+        
+        # Make bins for 2d histogram
+        LS_sig_hist_bins = np.arange(
+            60, 100 + LS_sig_bin_size, LS_sig_bin_size)
+        LS_sig_hist_bin_cents = np.arange(
+            60 + (LS_sig_bin_size/2), 100, LS_sig_bin_size)
+
+        LS_sig_hist_bins_all = np.append(
+            np.array([0]),
+            LS_sig_hist_bins,
+        )
+        LS_sig_hist_bin_cents_all = np.append(
+            np.array([30]),
+            LS_sig_hist_bin_cents,
+        )
+        
+        sin_amp_hist_bins = np.arange(
+            0, 80 + sin_sig_bin_size, sin_sig_bin_size)
+        sin_amp_hist_bin_cents = np.arange(
+            0 + (sin_sig_bin_size/2), 80, sin_sig_bin_size)
+        
+        bins_2d_all = [
+            sin_amp_hist_bins,
+            LS_sig_hist_bins_all,
+        ]
+        
+        # False detections
+        H_false, X_false, Y_false = np.histogram2d(
+            false_detections_sin_amp_sigs,
+            false_detections_LS_sig,
+            bins=bins_2d_all,
+        )
+        
+        # Compute density levels for significance
+        H_false_flat = H_false.flatten()
+
+        # Sort flattened histogram by decreasing bin vals (max first, min last)
+        sort_inds = np.argsort(H_false_flat)[::-1]
+
+        H_false_flat_sort = H_false_flat[sort_inds]
+
+        # Divide cumulative sum by sum to get cumulative fraction levels
+        H_false_flat_cumfrac = np.cumsum(H_false_flat_sort) / np.sum(H_false_flat_sort)
+
+        # Calculate density levels for 1 -- 5 sigma in 2d space
+        density_levels = 1.0 - np.exp(-0.5 * np.arange(1.0, 6.0, 1.0) ** 2)
+
+        H_false_den_levels = np.empty(len(density_levels))
+        for level_index, cur_level in enumerate(density_levels):
+            try:
+                # Find last index where cumulative sum fraction is still less
+                # than current density level, and store value from that level
+                H_false_den_levels[level_index] = H_false_flat_sort[
+                    H_false_flat_cumfrac <= cur_level
+                ][-1]
+            except IndexError:
+                H_false_den_levels[level_index] = H_false_flat_sort[0]
+        
+        if print_diagnostics:
+            print(H_false_den_levels)
+        
+        # True detections
+        H_true, X_true, Y_true = np.histogram2d(
+            true_detections_sin_amp_sigs,
+            true_detections_LS_sig,
+            bins=bins_2d_all,
+        )
+
+        # Compute density levels for significance
+        H_true_flat = H_true.flatten()
+
+        # Sort flattened histogram by decreasing bin vals (max first, min last)
+        sort_inds = np.argsort(H_true_flat)[::-1]
+
+        H_true_flat_sort = H_true_flat[sort_inds]
+
+        # Divide cumulative sum by sum to get cumulative fraction levels
+        H_true_flat_cumfrac = np.cumsum(H_true_flat_sort) / np.sum(H_true_flat_sort)
+        
+        # Calculate density levels for 1 -- 3 sigma in 2d space
+        density_levels = 1.0 - np.exp(-0.5 * np.arange(1.0, 4.0, 1.0) ** 2)
+        
+        H_true_den_levels = np.empty(len(density_levels))
+        for level_index, cur_level in enumerate(density_levels):
+            try:
+                # Find last index where cumulative sum fraction is still less
+                # than current density level, and store value from that level
+                H_true_den_levels[level_index] = H_true_flat_sort[
+                    H_true_flat_cumfrac <= cur_level
+                ][-1]
+            except IndexError:
+                H_true_den_levels[level_index] = H_true_flat_sort[0]
+        
+        if print_diagnostics:
+            print(H_true_den_levels)
+        
+        # Construct table for output
+        lo_grid_vals = np.meshgrid(
+            sin_amp_hist_bins[:-1],
+            LS_sig_hist_bins_all[:-1],
+        )
+        
+        hi_grid_vals = np.meshgrid(
+            sin_amp_hist_bins[1:],
+            LS_sig_hist_bins_all[1:],
+        )
+
+        grid_cents = np.meshgrid(
+            sin_amp_hist_bin_cents,
+            LS_sig_hist_bin_cents_all,
+        )
+        
+        H_false_sig_levels = np.full(len(H_false_flat), 'gt 5 sig')
+        H_false_sig_levels[np.where(H_false_flat < H_false_den_levels[4])] = 'gt 5 sig'
+        H_false_sig_levels[np.where(H_false_flat >= H_false_den_levels[4])] = '5 sig'
+        H_false_sig_levels[np.where(H_false_flat >= H_false_den_levels[3])] = '4 sig'
+        H_false_sig_levels[np.where(H_false_flat >= H_false_den_levels[2])] = '3 sig'
+        H_false_sig_levels[np.where(H_false_flat >= H_false_den_levels[1])] = '2 sig'
+        H_false_sig_levels[np.where(H_false_flat >= H_false_den_levels[0])] = '1 sig'
+
+        H_true_sig_levels = np.full(len(H_true_flat), 'gt 3 sig')
+        H_true_sig_levels[np.where(H_true_flat < H_true_den_levels[2])] = 'gt 3 sig'
+        H_true_sig_levels[np.where(H_true_flat >= H_true_den_levels[2])] = '3 sig'
+        H_true_sig_levels[np.where(H_true_flat >= H_true_den_levels[1])] = '2 sig'
+        H_true_sig_levels[np.where(H_true_flat >= H_true_den_levels[0])] = '1 sig'
+        
+        hist_table = Table(
+            [
+                lo_grid_vals[0].flatten(order='F'),
+                lo_grid_vals[1].flatten(order='F'),
+                hi_grid_vals[0].flatten(order='F'),
+                hi_grid_vals[1].flatten(order='F'),
+                grid_cents[0].flatten(order='F'),
+                grid_cents[1].flatten(order='F'),
+                H_false_flat,
+                H_true_flat,
+                H_false_sig_levels,
+                H_true_sig_levels,
+            ],
+            names=[
+                'lo_grid_vals_x',
+                'lo_grid_vals_y',
+                'hi_grid_vals_x',
+                'hi_grid_vals_y',
+                'grid_cent_x',
+                'grid_cent_y',
+                'H_false_flat',
+                'H_true_flat',
+                'H_false_sig_levels',
+                'H_true_sig_levels',
+            ]
+        )
+
+        hist_table.write(
+            './false_true_hist.h5',
+            format='hdf5', path='data',
+            overwrite=True,
+        )
+
+        hist_table.write(
+            './false_true_hist.txt',
+            format='ascii.fixed_width',
+            overwrite=True,
+        )
+        
+        if print_diagnostics:
+            print(hist_table)
+        
+        return hist_table
