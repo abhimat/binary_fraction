@@ -11,6 +11,7 @@ import copy
 
 class mcmc_fitter(object):
     poly_trend_order_base = 1
+    fit_flux = False
     
     def __init__(self):
         return
@@ -81,6 +82,10 @@ class mcmc_fitter(object):
         base_check = (9 < base_poly_trend_coeffs[0] < 22 and
                       -1e-1 < base_poly_trend_coeffs[1] < 1e-1)
         
+        if self.fit_flux:
+            base_check = (1e-18 < base_poly_trend_coeffs[0] < 1e6 and
+                          -1e-1 < base_poly_trend_coeffs[1] < 1e-1)
+        
         if base_check and self.poly_trend_order_base > 1:
             for poly_coeff_index in range(2, self.poly_trend_order_base + 1):
                 if not (-1e-2 < base_poly_trend_coeffs[poly_coeff_index] < 1e-2):
@@ -89,10 +94,17 @@ class mcmc_fitter(object):
         
         cos_check = 1e-2 < base_cos_coeff < 0.8
         
+        if self.fit_flux:
+            cos_check = True
+        
         h_check = True
         if len(self.h_obs_mags) > 0:
             h_check = (-10 < h_add < 10 and
                        -1e-2 < h_c1 < 1e-2)
+            
+            if self.fit_flux:
+                h_check = -1e-2 < h_c1 < 1e-2
+        
         
         if t0_check and base_check and cos_check and h_check:
             return 0.0
@@ -134,6 +146,9 @@ class mcmc_fitter(object):
                            base_poly_trend_coeffs[poly_coeff_index])
         
         # Base sinusoid model
+        if self.fit_flux:
+            base_cos_coeff = -1 * base_cos_coeff
+        
         model_mags += base_cos_coeff * np.cos(self.omega * t_term)
         
         # # Kp mags
