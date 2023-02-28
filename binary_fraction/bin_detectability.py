@@ -603,9 +603,10 @@ class bin_detectability(object):
             num_mock_bins=50,
             low_sig_check = 0.70,
             high_sig_check = 0.95,
-            min_amp_check = 3.0,
-            amp_check = 20.0,
+            min_amp_sig_check = 3.0,
+            amp_sig_check = 20.0,
             period_check_bound = 0.01,
+            amp_check_bound = 0.01,
             out_bin_detect_table_root='./bin_detect',
             print_diagnostics=False,
         ):
@@ -622,20 +623,23 @@ class bin_detectability(object):
             i.e.: the number of SBVs for every sample star.
         low_sig_check : float, default: 0.70
             The lowest false alarm significance to consider. Signals above this,
-            but below high_sig_check, have to pass amp_check in amp
+            but below high_sig_check, have to pass amp_sig_check in amp
             significance.
         high_sig_check : float, default: 0.95
             Signals above this false alarm significance only have to pass
-            min_amp_check in amp significance.
-        min_amp_check : float, default: 3.0
+            min_amp_sig_check in amp significance.
+        min_amp_sig_check : float, default: 3.0
             All signals to be considered have to pass this bound in amp
             significance.
-        amp_check : float, default: 20.0
+        amp_sig_check : float, default: 20.0
             Signals between low_sig_check and high_sig_check have to pass this
             bound in amp significance.
         period_check_bound : float, default: 0.01
-            Within what percent to consider a period detection to be a
-            real detection.
+            Within what percent of the real binary period to consider a
+            detection to be a real detection.
+        amp_check_bound : float, default: 0.01
+            Within what percent in magnitudes of real binary light curve
+            amplitude to consider a period detection to be a real detection.
         out_bin_detect_table_root : str, default: './bin_detect'
             The root file name of the out table files
         print_diagnostics : bool, default: False
@@ -673,6 +677,9 @@ class bin_detectability(object):
         # Construct low and high period check bounds
         lo_per_check = 1.0 - period_check_bound
         hi_per_check = 1.0 + period_check_bound
+        
+        lo_amp_check = 1.0 - amp_check_bound
+        hi_amp_check = 1.0 + amp_check_bound
         
         # Compute detectability for every star in specified sample
         for (star_index, star) in tqdm(enumerate(stars_list), total=len(stars_list)):
@@ -717,6 +724,7 @@ class bin_detectability(object):
                 mock_bin_lc_row = self.model_lc_params_table.loc[mock_bin_id]
                 
                 mock_true_period = mock_bin_row['binary_period']
+                mock_true_amp = mock_bin_lc_row['delta_mag_kp']
         
                 if print_diagnostics:
                     print('---')
@@ -774,15 +782,22 @@ class bin_detectability(object):
                 peak_period = (sbv_LS_results['LS_periods'])[
                     np.argmax(sbv_LS_results['LS_powers'])
                 ]
-                peak_amp = (star_amp_sig_table.loc[sbv])['cos_amp_sigs']
+                
+                peak_amp = (star_amp_sig_table.loc[sbv])['cos_amps']
+                peak_amp_sig = (star_amp_sig_table.loc[sbv])['cos_amp_sigs']
+                
+                amp_match_check = (
+                    mock_true_amp * lo_per_check <= peak_amp and
+                    mock_true_amp * hi_per_check >= peak_amp
+                )
                 
                 if print_diagnostics:
-                    print(f'Peak delta mag / med mag unc = {peak_amp:.3f}')
+                    print(f'cos amp / cos amp sig = {peak_amp_sig:.3f}')
                     print(f'Peak BS sig = {(peak_sig*100):.3f}%')
                 
-                if peak_amp < min_amp_check:
+                if peak_amp < min_amp_sig_check:
                     if print_diagnostics:
-                        print('Amplitude < min amp of {min_amp_check}')
+                        print('Amplitude < min amp of {min_amp_sig_check}')
                     
                     continue
                 
@@ -792,9 +807,9 @@ class bin_detectability(object):
                     
                     continue
                 
-                if peak_sig < high_sig_check and peak_amp < amp_check:
+                if peak_sig < high_sig_check and peak_amp_sig < amp_sig_check:
                     if print_diagnostics:
-                        print('Peak < {high_sig_check*100}% significant and amplitude < {amp_check}')
+                        print('Peak < {high_sig_check*100}% significant and amplitude < {amp_sig_check}')
                     
                     continue
                 
@@ -810,7 +825,7 @@ class bin_detectability(object):
                 
                 sorted_powers = np.sort(sbv_LS_results['LS_powers'])
                 
-                if sorted_powers[-1] in matching_powers:
+                if (amp_match_check and sorted_powers[-1] in matching_powers):
                     detection_direct = True
                     
                     if sorted_powers[-1] in binPer_filt_results['LS_powers']:
@@ -818,7 +833,8 @@ class bin_detectability(object):
                     elif sorted_powers[-1] in binPer_half_filt_results['LS_powers']:
                         detection_half_period = True
                     
-                elif len(sbv_LS_results) > 1 and sorted_powers[-2] in matching_powers:
+                elif (amp_match_check and len(sbv_LS_results) > 1 and
+                      sorted_powers[-2] in matching_powers):
                     detection_alias = True
                     
                     if sorted_powers[-2] in binPer_filt_results['LS_powers']:
@@ -842,7 +858,7 @@ class bin_detectability(object):
                 
                 passing_sbvs.append(sbv)
                 passing_sbvs_LS_sig.append(peak_sig)
-                passing_sbvs_sin_amp.append(peak_amp)
+                passing_sbvs_sin_amp.append(peak_amp_sig)
                 stars_passing_sbvs[star_index, sbv] = True
                 
                 stars_direct_detection_detected_sbvs[star_index, sbv] = detection_direct
@@ -1540,7 +1556,9 @@ class bin_detectability(object):
                 peak_period = (sbv_LS_results['LS_periods'])[
                     np.argmax(sbv_LS_results['LS_powers'])
                 ]
-                peak_amp = (star_amp_sig_table.loc[sbv])['cos_amp_sigs']
+                
+                peak_amp = (star_amp_sig_table.loc[sbv])['cos_amps']
+                peak_amp_sig = (star_amp_sig_table.loc[sbv])['cos_amp_sigs']
                 
                 # Check if most significant two peaks are consistent
                 # with binary detection.
@@ -1580,7 +1598,7 @@ class bin_detectability(object):
                 
                 # Check sig hist table
                 near_neighbor = sig_hist_neighbor_kdtree.query(
-                    [peak_amp, peak_sig], k=1,
+                    [peak_amp_sig, peak_sig], k=1,
                 )
                 neighbor_dist, neighbor_index = near_neighbor
                 sig_level = sig_hist_table[neighbor_index]['H_false_sig_levels']
@@ -1597,7 +1615,7 @@ class bin_detectability(object):
                 
                 passing_sbvs.append(sbv)
                 passing_sbvs_LS_sig.append(peak_sig)
-                passing_sbvs_sin_amp.append(peak_amp)
+                passing_sbvs_sin_amp.append(peak_amp_sig)
                 stars_passing_sbvs[star_index, sbv] = True
                 
                 stars_direct_detection_detected_sbvs[star_index, sbv] = detection_direct
