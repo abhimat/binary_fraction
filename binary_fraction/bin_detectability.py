@@ -345,18 +345,29 @@ class bin_detectability(object):
     
     def compute_amp_sig(
             self, star,
-            num_mock_bins=50,
+            num_mock_bins = 50,
             low_sig_check = 0.60,
             print_diagnostics=False,
             mp_pool = None,
         ):
         """
-        Compute the amplitude significance of possible binary detection signals
+        Compute the amplitude significance of possible binary detection signals.
+        Outputs table with significance of cos amplitude, and if binary
+        detection was consistent with period or half period within 1 percent.
         
         Parameters
         ----------
         star : str
             Star name to compute the amplitude significance for
+        num_mock_bins : int, default: 50
+            Number of mock binary signals injected into light curve.
+            i.e.: the number of SBVs for every sample star.
+        low_sig_check : float, default: 0.60
+            Lowest bootstrap false alarm significance to conside
+        print_diagnostics : bool, default: False
+            Whether or not to print diagnostic messages while running
+        mp_pool : Pool object, default: None
+            Pool to use for parallel processing. 
         """
         
         # Make output directory
@@ -594,6 +605,7 @@ class bin_detectability(object):
             high_sig_check = 0.95,
             min_amp_check = 3.0,
             amp_check = 20.0,
+            period_check_bound = 0.01,
             out_bin_detect_table_root='./bin_detect',
             print_diagnostics=False,
         ):
@@ -605,6 +617,29 @@ class bin_detectability(object):
         ----------
         stars_list : list[str]
             List of star names to compute the detectability for
+        num_mock_bins : int, default: 50
+            Number of mock binary signals injected into light curve.
+            i.e.: the number of SBVs for every sample star.
+        low_sig_check : float, default: 0.70
+            The lowest false alarm significance to consider. Signals above this,
+            but below high_sig_check, have to pass amp_check in amp
+            significance.
+        high_sig_check : float, default: 0.95
+            Signals above this false alarm significance only have to pass
+            min_amp_check in amp significance.
+        min_amp_check : float, default: 3.0
+            All signals to be considered have to pass this bound in amp
+            significance.
+        amp_check : float, default: 20.0
+            Signals between low_sig_check and high_sig_check have to pass this
+            bound in amp significance.
+        period_check_bound : float, default: 0.01
+            Within what percent to consider a period detection to be a
+            real detection.
+        out_bin_detect_table_root : str, default: './bin_detect'
+            The root file name of the out table files
+        print_diagnostics : bool, default: False
+            Whether or not to print diagnostic messages while running
         """
         
         # Create empty arrays for storing outputs
@@ -634,6 +669,10 @@ class bin_detectability(object):
         
         passing_sbvs_LS_sig_all = np.array([])
         passing_sbvs_sin_amp_all = np.array([])
+        
+        # Construct low and high period check bounds
+        lo_per_check = 1.0 - period_check_bound
+        hi_per_check = 1.0 + period_check_bound
         
         # Compute detectability for every star in specified sample
         for (star_index, star) in tqdm(enumerate(stars_list), total=len(stars_list)):
@@ -697,13 +736,13 @@ class bin_detectability(object):
                 
                 # Check for a signal at binary period and half of binary period
                 binPer_filt = np.where(np.logical_and(
-                    sbv_LS_results['LS_periods'] >= mock_true_period * 0.99,
-                    sbv_LS_results['LS_periods'] <= mock_true_period * 1.01
+                    sbv_LS_results['LS_periods'] >= mock_true_period * lo_per_check,
+                    sbv_LS_results['LS_periods'] <= mock_true_period * hi_per_check
                 ))
             
                 binPer_half_filt = np.where(np.logical_and(
-                    sbv_LS_results['LS_periods'] >= (0.5*mock_true_period) * 0.99,
-                    sbv_LS_results['LS_periods'] <= (0.5*mock_true_period) * 1.01
+                    sbv_LS_results['LS_periods'] >= (0.5*mock_true_period) * lo_per_check,
+                    sbv_LS_results['LS_periods'] <= (0.5*mock_true_period) * hi_per_check
                 ))
                 
                 binPer_filt_results = sbv_LS_results[binPer_filt]
@@ -711,9 +750,6 @@ class bin_detectability(object):
                 
                 # Check for signals that are not at either binary period
                 # or half binary period
-                
-                
-                
                 if (len(binPer_filt_results) + len(binPer_half_filt_results)) == 0:
                     if print_diagnostics:
                         print('No periodic signal found at binary period')
