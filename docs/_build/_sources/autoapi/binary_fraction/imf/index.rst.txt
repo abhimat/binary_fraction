@@ -1,0 +1,45 @@
+:py:mod:`binary_fraction.imf`
+=============================
+
+.. py:module:: binary_fraction.imf
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   binary_fraction.imf.IMF
+   binary_fraction.imf.IMF_power_law
+
+
+
+
+.. py:class:: IMF(mass_limits=np.array([10, 100]))
+
+   Bases: :py:obj:`object`
+
+
+.. py:class:: IMF_power_law(mass_limits=np.array([10, 100]), alpha=1.7)
+
+   Bases: :py:obj:`IMF`
+
+   .. py:method:: calculate_pl_coeff()
+
+
+   .. py:method:: p_m(m)
+
+
+   .. py:method:: cdf_m(m)
+
+
+   .. py:method:: inv_cdf_u(u)
+
+
+   .. py:method:: draw_imf_mass(rand=-1.0)
+
+
+

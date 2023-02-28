@@ -1,0 +1,348 @@
+:py:mod:`binary_fraction.bin_detectability`
+===========================================
+
+.. py:module:: binary_fraction.bin_detectability
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   binary_fraction.bin_detectability.bin_detectability
+
+
+
+
+.. py:class:: bin_detectability
+
+   Bases: :py:obj:`object`
+
+   
+   Object to determine detection of injected mock binary signals
+   with periodicity search
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+   .. py:attribute:: longPer_boundary
+      :value: 365.25
+
+      
+
+   .. py:attribute:: longPer_BSSig_boundary
+      :value: 0.5
+
+      
+
+   .. py:attribute:: num_cores
+      :value: 32
+
+      
+
+   .. py:method:: set_sbv_dir(sbv_dir='../star_bin_var/')
+
+      
+      Set sbv_dir variable for class, where the light curves
+      with injected binary variability live.
+
+
+      :Parameters:
+
+          **sbv_dir** : str, default: '../star_bin_var/'
+              Directory where the injected bin var light curves are stored
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: load_sbv_sample_table(table_file_name='sample_table.txt')
+
+      
+      Load the SBV sample table
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: load_model_sb_params_table(table_file_path='../stellar_binary_params.h5')
+
+      
+      Load the binary model light curve parameters table. Assumes table is
+      stored in astropy tables hdf5 format
+
+
+      :Parameters:
+
+          **table_file_path** : str, default: '../stellar_binary_params.h5'
+              File path of the stellar binary parameters table
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: load_model_lc_params_table(table_file_path='./binary_model_lc_params.h5')
+
+      
+      Load the binary model light curve parameters table
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: read_align_data(align_kp_name, align_h_name, align_data_location='/g/ghez/abhimat/datasets/align_data_py3/')
+
+      
+      Set and read the photometry align data being used for
+      determining phot uncertainty to add to observation data points
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: fit_trended_sinusoid(poly_trend_order, t0, period, mags, mag_errors, obs_days, obs_filts, mp_pool=None, run_initial_LS=True, run_initial_polyfit=True, show_MCMC_progress=False, mcmc_steps=500, last_steps=200, print_diagnostics=False)
+
+      
+      Run MCMC fit for trended sinusoid
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: compute_amp_sig(star, num_mock_bins=50, low_sig_check=0.6, print_diagnostics=False, mp_pool=None)
+
+      
+      Compute the amplitude significance of possible binary detection signals.
+      Outputs table with significance of cos amplitude, and if binary
+      detection was consistent with period or half period within 1 percent.
+
+
+      :Parameters:
+
+          **star** : str
+              Star name to compute the amplitude significance for
+
+          **num_mock_bins** : int, default: 50
+              Number of mock binary signals injected into light curve.
+              i.e.: the number of SBVs for every sample star.
+
+          **low_sig_check** : float, default: 0.60
+              Lowest bootstrap false alarm significance to conside
+
+          **print_diagnostics** : bool, default: False
+              Whether or not to print diagnostic messages while running
+
+          **mp_pool** : Pool object, default: None
+              Pool to use for parallel processing. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: compute_detectability_basic_sig_checks(stars_list, num_mock_bins=50, low_sig_check=0.7, high_sig_check=0.95, min_amp_sig_check=3.0, amp_sig_check=20.0, period_check_bound=0.01, amp_check_bound=0.01, out_bin_detect_table_root='./bin_detect', print_diagnostics=False)
+
+      
+      Compute the detectability of the injected light curves for the
+      stars provided in stars_list
+
+
+      :Parameters:
+
+          **stars_list** : list[str]
+              List of star names to compute the detectability for
+
+          **num_mock_bins** : int, default: 50
+              Number of mock binary signals injected into light curve.
+              i.e.: the number of SBVs for every sample star.
+
+          **low_sig_check** : float, default: 0.70
+              The lowest false alarm significance to consider. Signals above this,
+              but below high_sig_check, have to pass amp_sig_check in amp
+              significance.
+
+          **high_sig_check** : float, default: 0.95
+              Signals above this false alarm significance only have to pass
+              min_amp_sig_check in amp significance.
+
+          **min_amp_sig_check** : float, default: 3.0
+              All signals to be considered have to pass this bound in amp
+              significance.
+
+          **amp_sig_check** : float, default: 20.0
+              Signals between low_sig_check and high_sig_check have to pass this
+              bound in amp significance.
+
+          **period_check_bound** : float, default: 0.01
+              Within what percent of the real binary period to consider a
+              detection to be a real detection.
+
+          **amp_check_bound** : float, default: 0.01
+              Within what percent in magnitudes of real binary light curve
+              amplitude to consider a period detection to be a real detection.
+
+          **out_bin_detect_table_root** : str, default: './bin_detect'
+              The root file name of the out table files
+
+          **print_diagnostics** : bool, default: False
+              Whether or not to print diagnostic messages while running
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: costruct_sig_amp_table(skip_stars=['irs16SW', 'S4-258', 'S2-36'], bin_detect_table_root='./bin_detect', print_diagnostics=False)
+
+
+   .. py:method:: construct_sig_hists(sig_amp_table_root='./bin_detect', print_diagnostics=False, LS_sig_bin_size=2, sin_sig_bin_size=4)
+
+
+   .. py:method:: compute_detectability(stars_list, num_mock_bins=100, sig_hist_table='../bin_detectability/false_true_hist.h5', detection_sig_levels=['4 sig', '5 sig', 'gt 5 sig'], out_bin_detect_table_root='./bin_detect', print_diagnostics=False)
+
+      
+      Compute the detectability of the injected light curves for the
+      stars provided in stars_list
+
+
+      :Parameters:
+
+          **stars_list** : list[str]
+              List of star names to compute the detectability for
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+

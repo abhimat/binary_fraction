@@ -1,0 +1,56 @@
+:py:mod:`binary_fraction.binary_light_curves`
+=============================================
+
+.. py:module:: binary_fraction.binary_light_curves
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   binary_fraction.binary_light_curves.binary_pop_light_curves
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   binary_fraction.binary_light_curves.binary_light_curve_from_binary_row
+
+
+
+.. py:function:: binary_light_curve_from_binary_row(cur_binary_row, bin_pop_lc_obj, out_dir, use_blackbody_atm=False)
+
+
+.. py:class:: binary_pop_light_curves
+
+   Bases: :py:obj:`object`
+
+   .. py:method:: make_pop_isochrone(isoc_age=4000000.0, isoc_ext_Ks=2.54, isoc_dist=7971.0, isoc_phase=None, isoc_met=0.0, isoc_atm_func='merged')
+
+
+   .. py:method:: save_obs_times(obs_times_Kp, obs_times_H)
+
+
+   .. py:method:: set_extLaw_alpha(ext_alpha=2.3)
+
+
+   .. py:method:: set_population_extinctions(ext_Kp=2.7, ext_H_mod=0.0)
+
+
+   .. py:method:: set_pop_distance(pop_distance=7971.0)
+
+
+   .. py:method:: make_binary_light_curve(binary_index, mass_1, mass_2, binary_period, binary_t0_shift, binary_q, binary_ecc, binary_inc, use_blackbody_atm=False, out_dir='./mock_binaries', num_phase_points=100)
+
+
+   .. py:method:: make_binary_population_light_curves(binary_pop_params_file, use_blackbody_atm=False, out_dir='./mock_binaries', parallelize=True)
+
+
+

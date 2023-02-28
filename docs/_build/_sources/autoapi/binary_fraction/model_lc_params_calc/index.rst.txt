@@ -1,0 +1,103 @@
+:py:mod:`binary_fraction.model_lc_params_calc`
+==============================================
+
+.. py:module:: binary_fraction.model_lc_params_calc
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   binary_fraction.model_lc_params_calc.model_lc_params_calc
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   binary_fraction.model_lc_params_calc.params_from_bin_index
+
+
+
+.. py:function:: params_from_bin_index(binary_index, model_lc_params_calc_obj)
+
+
+.. py:class:: model_lc_params_calc(model_lcs_dir='./model_light_curves/')
+
+   Bases: :py:obj:`object`
+
+   .. py:method:: calc_lc_params(binary_index)
+
+      
+      Calculate the light curve stats for the current mock binary system
+      returns(Kp mean mag, )
+
+
+      :Parameters:
+
+          **binary_index** : int
+              The integer index of the binary system to calculate the stats for
+
+      :Returns:
+
+          **peak_mag_kp** : float
+              Kp mag at peak brightness
+
+          **dip_mag_kp** : float
+              Kp mag at deepest dip
+
+          **dip_phase_kp** : float
+              Phase at deepest Kp mag dip
+
+          **delta_mag_kp** : float
+              Size of the variation in Kp mag
+
+          **mean_mag_kp** : float
+              Mean Kp magnitude
+
+          **med_mag_kp** : float
+              Median Kp magnitude
+
+          **peak_mag_h** : float
+              H mag at peak brightness
+
+          **dip_mag_h** : float
+              H mag at deepest dip
+
+          **dip_phase_kp** : float
+              Phase at deepest H mag dip
+
+          **delta_mag_h** : float
+              Size of the variation in H mag
+
+          **mean_mag_h** : float
+              Mean H magnitude
+
+          **med_mag_h** : float
+              Median H magnitude
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: calc_population_params(binary_pop_params_file, parallelize=True)
+
+
+

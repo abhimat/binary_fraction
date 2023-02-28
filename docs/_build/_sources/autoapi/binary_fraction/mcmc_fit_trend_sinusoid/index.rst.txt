@@ -1,0 +1,61 @@
+:py:mod:`binary_fraction.mcmc_fit_trend_sinusoid`
+=================================================
+
+.. py:module:: binary_fraction.mcmc_fit_trend_sinusoid
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter
+
+
+
+
+.. py:class:: mcmc_fitter
+
+   Bases: :py:obj:`object`
+
+   .. py:attribute:: poly_trend_order_base
+      :value: 1
+
+      
+
+   .. py:attribute:: fit_flux
+      :value: False
+
+      
+
+   .. py:method:: set_poly_trend_order_base(poly_trend_order_base)
+
+
+   .. py:method:: set_t0(t0)
+
+
+   .. py:method:: set_period(period)
+
+
+   .. py:method:: set_observation_filts(obs_filts)
+
+
+   .. py:method:: set_observation_times(obs_days)
+
+
+   .. py:method:: set_observations(obs, obs_errors)
+
+
+   .. py:method:: log_prior(theta)
+
+
+   .. py:method:: log_likelihood(theta, print_checks=False)
+
+
+   .. py:method:: log_probability(theta)
+
+
+
