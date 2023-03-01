@@ -678,9 +678,6 @@ class bin_detectability(object):
         lo_per_check = 1.0 - period_check_bound
         hi_per_check = 1.0 + period_check_bound
         
-        lo_amp_check = 1.0 - amp_check_bound
-        hi_amp_check = 1.0 + amp_check_bound
-        
         # Compute detectability for every star in specified sample
         for (star_index, star) in tqdm(enumerate(stars_list), total=len(stars_list)):
             # Read star model, LS, and amp sig tables
@@ -725,7 +722,10 @@ class bin_detectability(object):
                 
                 mock_true_period = mock_bin_row['binary_period']
                 mock_true_amp = mock_bin_lc_row['delta_mag_kp']
-        
+                
+                lo_amp_check = mock_true_amp - amp_check_bound
+                hi_amp_check = mock_true_amp + amp_check_bound
+                
                 if print_diagnostics:
                     print('---')
                     print(f'SBV ID: {sbv}')
@@ -787,8 +787,8 @@ class bin_detectability(object):
                 peak_amp_sig = (star_amp_sig_table.loc[sbv])['cos_amp_sigs']
                 
                 amp_match_check = (
-                    mock_true_amp * lo_per_check <= peak_amp and
-                    mock_true_amp * hi_per_check >= peak_amp
+                    (lo_amp_check) <= (peak_amp*2.) and
+                    (hi_amp_check) >= (peak_amp*2.)
                 )
                 
                 if print_diagnostics:

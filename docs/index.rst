@@ -7,7 +7,7 @@ Welcome to binary_fraction's documentation!
 ===========================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
    
    autoapi/index
