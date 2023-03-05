@@ -581,8 +581,9 @@ class star_add_binary_var(object):
             star_bin_var_out_dir='../star_bin_var/',
             plot_out_dir='./',
             plot_detections=False,
-            detections_table='../bin_detectability/bin_detect_sampall.h5',
+            detections_table='../bin_detectability_likely/bin_detect_sampall.h5',
             print_diagnostics=False,
+            plot_sbv_indexes=None,
             plot_n_rows=10, plot_n_cols=5,
             plot_figsize=(20, 10),
         ):
@@ -597,8 +598,23 @@ class star_add_binary_var(object):
         star_bin_var_out_dir : str, default: './star_bin_var/'
             Directory where the output tables live for each star,
             with mock binary light curves injected
+        plot_out_dir : str, default: './'
+            Directory of the output plots
+        plot_detections : bool, default: False
+            Specify if to indicate detections on the plots
+        detections_table : str, default: '../bin_detectability_likely/bin_detect_sampall.h5'
+            Table where detections of the injected SBVs are stored
         print_diagnostics : bool, default: False
             Specify if to print diagnostics during run
+        plot_sbv_indexes : [int], default: None
+            List of SBV indexes to plot. If not specified
+            (plot_sbv_indexes = None), all SBV indexes will be plotted
+        plot_n_rows : int, default: 10
+            Number of rows for the SBV injected plots
+        plot_n_cols : int, default: 5
+            Number of columns for the SBV injected plots
+        plot_figsize : (float, float), default: (20, 10)
+            Tuple of figure size
         """
         
         # Make sure output directory exists
@@ -737,8 +753,11 @@ class star_add_binary_var(object):
             wspace=0.175, hspace=0.2,
         )
         
+        if plot_sbv_indexes == None:
+            plot_sbv_indexes = star_table['star_bin_var_ids']
+        
         # Go through each injected light curve
-        for sbv_index in star_table['star_bin_var_ids']:
+        for sbv_index in plot_sbv_indexes:
             # Extract SBV row for the current injection
             sbv_row = star_table.loc[sbv_index]
             
@@ -846,14 +865,14 @@ class star_add_binary_var(object):
             ax_ph_h.set_yticklabels([])
             
             # Turn off axis labels depending on where on plot
-            if sbv_index % 5 != 0: 
+            if sbv_index % plot_n_cols != 0: 
                 ax_kp.set_yticklabels([])
                 ax_h.set_yticklabels([])
             else:
                 ax_kp.set_ylabel(r"$m_{K'}$")
                 ax_h.set_ylabel(r"$m_{H}$")
             
-            if sbv_index < 45: 
+            if sbv_index < ((plot_n_rows * plot_n_cols) - plot_n_cols): 
                 ax_kp.set_xticklabels([])
                 ax_h.set_xticklabels([])
                 
