@@ -24,6 +24,8 @@ class bin_detectability(object):
     with periodicity search
     """
     
+    sidereal_day = 23.9344696 / 24.0
+    
     longPer_boundary = 365.25
     longPer_BSSig_boundary = 0.5
     
@@ -450,7 +452,7 @@ class bin_detectability(object):
                 continue
             
             # Check for a signal at binary period and half of binary period
-            binPer_filt = np.where(np.logical_and(
+            binPer_full_filt = np.where(np.logical_and(
                 sbv_LS_results['LS_periods'] >= mock_true_period * 0.99,
                 sbv_LS_results['LS_periods'] <= mock_true_period * 1.01))
         
@@ -458,20 +460,20 @@ class bin_detectability(object):
                 sbv_LS_results['LS_periods'] >= (0.5*mock_true_period) * 0.99,
                 sbv_LS_results['LS_periods'] <= (0.5*mock_true_period) * 1.01))
             
-            binPer_filt_results = sbv_LS_results[binPer_filt]
+            binPer_full_filt_results = sbv_LS_results[binPer_full_filt]
             binPer_half_filt_results = sbv_LS_results[binPer_half_filt]
             
             # Perform checks for LS significance and LS significance
             matching_sigs = np.append(
-                binPer_filt_results['LS_bs_sigs'],
+                binPer_full_filt_results['LS_bs_sigs'],
                 binPer_half_filt_results['LS_bs_sigs'],
             )
             matching_powers = np.append(
-                binPer_filt_results['LS_powers'],
+                binPer_full_filt_results['LS_powers'],
                 binPer_half_filt_results['LS_powers'],
             )
             matching_periods = np.append(
-                binPer_filt_results['LS_periods'],
+                binPer_full_filt_results['LS_periods'],
                 binPer_half_filt_results['LS_periods'],
             )
             
@@ -743,41 +745,90 @@ class bin_detectability(object):
                     continue
                 
                 # Check for a signal at binary period and half of binary period
-                binPer_filt = np.where(np.logical_and(
+                mock_half_period = 0.5*mock_true_period
+                
+                binPer_full_filt = np.where(np.logical_and(
                     sbv_LS_results['LS_periods'] >= mock_true_period * lo_per_check,
                     sbv_LS_results['LS_periods'] <= mock_true_period * hi_per_check
                 ))
             
                 binPer_half_filt = np.where(np.logical_and(
-                    sbv_LS_results['LS_periods'] >= (0.5*mock_true_period) * lo_per_check,
-                    sbv_LS_results['LS_periods'] <= (0.5*mock_true_period) * hi_per_check
+                    sbv_LS_results['LS_periods'] >= mock_half_period * lo_per_check,
+                    sbv_LS_results['LS_periods'] <= mock_half_period * hi_per_check
                 ))
                 
-                binPer_filt_results = sbv_LS_results[binPer_filt]
+                binPer_full_filt_results = sbv_LS_results[binPer_full_filt]
                 binPer_half_filt_results = sbv_LS_results[binPer_half_filt]
                 
-                # Check for signals that are not at either binary period
-                # or half binary period
-                if (len(binPer_filt_results) + len(binPer_half_filt_results)) == 0:
+                # Check for detections at sidereal day, solar day, year aliases
+                sid_day_full_alias_period = np.abs(
+                    1.0/(
+                        (1/mock_true_period) - (1/self.sidereal_day)
+                    )
+                )
+                
+                sid_day_half_alias_period = np.abs(
+                    1.0/(
+                        (1/mock_half_period) - (1/self.sidereal_day)
+                    )
+                )
+                
+                sid_day_full_alias_filt = np.where(np.logical_and(
+                    sbv_LS_results['LS_periods'] >= sid_day_full_alias_period * lo_per_check,
+                    sbv_LS_results['LS_periods'] <= sid_day_full_alias_period * hi_per_check
+                ))
+            
+                sid_day_half_alias_filt = np.where(np.logical_and(
+                    sbv_LS_results['LS_periods'] >= sid_day_half_alias_period * lo_per_check,
+                    sbv_LS_results['LS_periods'] <= sid_day_half_alias_period * hi_per_check
+                ))
+                
+                sid_day_full_alias_filt_results = sbv_LS_results[sid_day_full_alias_filt]
+                sid_day_half_alias_filt_results = sbv_LS_results[sid_day_half_alias_filt]
+                
+                # Make sure signals are detected for full or half periods,
+                # with true or alias detection
+                total_num_signals = len(binPer_full_filt_results) +\
+                    len(binPer_half_filt_results) +\
+                    len(sid_day_full_alias_filt_results) +\
+                    len(sid_day_half_alias_filt_results)
+                
+                if total_num_signals == 0:
                     if print_diagnostics:
                         print('No periodic signal found at binary period')
-                    
+
                     continue
                 
                 # Perform checks for LS significance and LS significance
+                # Construct arrays for matching signals
                 matching_sigs = np.append(
-                    binPer_filt_results['LS_bs_sigs'],
+                    binPer_full_filt_results['LS_bs_sigs'],
                     binPer_half_filt_results['LS_bs_sigs'],
                 )
-                matching_powers = np.append(
-                    binPer_filt_results['LS_powers'],
-                    binPer_half_filt_results['LS_powers'],
-                )
-                matching_periods = np.append(
-                    binPer_filt_results['LS_periods'],
-                    binPer_half_filt_results['LS_periods'],
+                matching_alias_sigs = np.append(
+                    sid_day_full_alias_filt_results['LS_bs_sigs'],
+                    sid_day_half_alias_filt_results['LS_bs_sigs'],
                 )
                 
+                matching_powers = np.append(
+                    binPer_full_filt_results['LS_powers'],
+                    binPer_half_filt_results['LS_powers'],
+                )
+                matching_alias_powers = np.append(
+                    sid_day_full_alias_filt_results['LS_powers'],
+                    sid_day_half_alias_filt_results['LS_powers'],
+                )
+                
+                matching_periods = np.append(
+                    binPer_full_filt_results['LS_periods'],
+                    binPer_half_filt_results['LS_periods'],
+                )
+                matching_alias_periods = np.append(
+                    sid_day_full_alias_filt_results['LS_periods'],
+                    sid_day_half_alias_filt_results['LS_periods'],
+                )
+                
+                # Peak properties
                 peak_sig = np.max(sbv_LS_results['LS_bs_sigs'])
                 peak_period = (sbv_LS_results['LS_periods'])[
                     np.argmax(sbv_LS_results['LS_powers'])
@@ -813,7 +864,7 @@ class bin_detectability(object):
                     
                     continue
                 
-                # Check if most significant two peaks are consistent
+                # Check if most significant peak is consistent
                 # with binary detection.
                 # Make relevant flags for direct / alias detection and
                 # full / half period detection
@@ -825,21 +876,20 @@ class bin_detectability(object):
                 
                 sorted_powers = np.sort(sbv_LS_results['LS_powers'])
                 
-                if (amp_match_check and sorted_powers[-1] in matching_powers):
+                if (amp_match_check and peak_period in matching_periods):
                     detection_direct = True
                     
-                    if sorted_powers[-1] in binPer_filt_results['LS_powers']:
+                    if peak_period in binPer_full_filt_results['LS_periods']:
                         detection_full_period = True
-                    elif sorted_powers[-1] in binPer_half_filt_results['LS_powers']:
+                    elif peak_period in binPer_half_filt_results['LS_periods']:
                         detection_half_period = True
                     
-                elif (amp_match_check and len(sbv_LS_results) > 1 and
-                      sorted_powers[-2] in matching_powers):
+                elif (amp_match_check and peak_period in matching_alias_periods):
                     detection_alias = True
                     
-                    if sorted_powers[-2] in binPer_filt_results['LS_powers']:
+                    if peak_period in sid_day_full_alias_filt_results['LS_periods']:
                         detection_full_period = True
-                    elif sorted_powers[-2] in binPer_half_filt_results['LS_powers']:
+                    elif peak_period in sid_day_half_alias_filt_results['LS_periods']:
                         detection_half_period = True
                 
                 # Final check: is most significant peak a detection / alias of
@@ -1517,7 +1567,7 @@ class bin_detectability(object):
                     continue
                 
                 # Check for a signal at binary period and half of binary period
-                binPer_filt = np.where(np.logical_and(
+                binPer_full_filt = np.where(np.logical_and(
                     sbv_LS_results['LS_periods'] >= mock_true_period * 0.99,
                     sbv_LS_results['LS_periods'] <= mock_true_period * 1.01
                 ))
@@ -1527,12 +1577,12 @@ class bin_detectability(object):
                     sbv_LS_results['LS_periods'] <= (0.5*mock_true_period) * 1.01
                 ))
                 
-                binPer_filt_results = sbv_LS_results[binPer_filt]
+                binPer_full_filt_results = sbv_LS_results[binPer_full_filt]
                 binPer_half_filt_results = sbv_LS_results[binPer_half_filt]
                 
                 # Check for signals that are not at either binary period
                 # or half binary period
-                if (len(binPer_filt_results) + len(binPer_half_filt_results)) == 0:
+                if (len(binPer_full_filt_results) + len(binPer_half_filt_results)) == 0:
                     if print_diagnostics:
                         print('No periodic signal found at binary period')
                     
@@ -1540,15 +1590,15 @@ class bin_detectability(object):
                 
                 # Perform checks for LS significance and LS significance
                 matching_sigs = np.append(
-                    binPer_filt_results['LS_bs_sigs'],
+                    binPer_full_filt_results['LS_bs_sigs'],
                     binPer_half_filt_results['LS_bs_sigs'],
                 )
                 matching_powers = np.append(
-                    binPer_filt_results['LS_powers'],
+                    binPer_full_filt_results['LS_powers'],
                     binPer_half_filt_results['LS_powers'],
                 )
                 matching_periods = np.append(
-                    binPer_filt_results['LS_periods'],
+                    binPer_full_filt_results['LS_periods'],
                     binPer_half_filt_results['LS_periods'],
                 )
                 
@@ -1575,7 +1625,7 @@ class bin_detectability(object):
                 if sorted_powers[-1] in matching_powers:
                     detection_direct = True
                     
-                    if sorted_powers[-1] in binPer_filt_results['LS_powers']:
+                    if sorted_powers[-1] in binPer_full_filt_results['LS_powers']:
                         detection_full_period = True
                     elif sorted_powers[-1] in binPer_half_filt_results['LS_powers']:
                         detection_half_period = True
@@ -1583,7 +1633,7 @@ class bin_detectability(object):
                 elif len(sbv_LS_results) > 1 and sorted_powers[-2] in matching_powers:
                     detection_alias = True
                     
-                    if sorted_powers[-2] in binPer_filt_results['LS_powers']:
+                    if sorted_powers[-2] in binPer_full_filt_results['LS_powers']:
                         detection_full_period = True
                     elif sorted_powers[-2] in binPer_half_filt_results['LS_powers']:
                         detection_half_period = True
