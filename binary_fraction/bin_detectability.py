@@ -760,7 +760,7 @@ class bin_detectability(object):
                 binPer_full_filt_results = sbv_LS_results[binPer_full_filt]
                 binPer_half_filt_results = sbv_LS_results[binPer_half_filt]
                 
-                # Check for detections at sidereal day, solar day, year aliases
+                # Check for detections at sidereal day aliases
                 sid_day_full_alias_period = np.abs(
                     1.0/(
                         (1/mock_true_period) - (1/self.sidereal_day)
@@ -1439,6 +1439,7 @@ class bin_detectability(object):
     def compute_detectability(
             self, stars_list,
             num_mock_bins=100,
+            min_amp_sig_check = 4.0,
             sig_hist_table='../bin_detectability/false_true_hist.h5',
             detection_sig_levels=[
                 '4 sig', '5 sig', 'gt 5 sig',
@@ -1454,6 +1455,22 @@ class bin_detectability(object):
         ----------
         stars_list : list[str]
             List of star names to compute the detectability for
+        num_mock_bins : int, default: 50
+            Number of mock binary signals injected into light curve.
+            i.e.: the number of SBVs for every sample star.
+        min_amp_sig_check : float, default: 4.0
+            All signals to be considered have to pass this bound in amp
+            significance.
+        sig_hist_table : str, default='../bin_detectability/false_true_hist.h5'
+            Location of hdf5 astropy table with the significance regions for
+            false and true detections
+        detection_sig_levels : [str], default: ['4 sig', '5 sig', 'gt 5 sig',]
+            Column significance values to consider detected in the
+            sig_hist_table
+        out_bin_detect_table_root : str, default: './bin_detect'
+            The root file name of the out table files
+        print_diagnostics : bool, default: False
+            Whether or not to print diagnostic messages while running
         """
         
         # Read in significance region table
@@ -1567,41 +1584,90 @@ class bin_detectability(object):
                     continue
                 
                 # Check for a signal at binary period and half of binary period
+                mock_half_period = 0.5*mock_true_period
+                
                 binPer_full_filt = np.where(np.logical_and(
-                    sbv_LS_results['LS_periods'] >= mock_true_period * 0.99,
-                    sbv_LS_results['LS_periods'] <= mock_true_period * 1.01
+                    sbv_LS_results['LS_periods'] >= mock_true_period * lo_per_check,
+                    sbv_LS_results['LS_periods'] <= mock_true_period * hi_per_check
                 ))
             
                 binPer_half_filt = np.where(np.logical_and(
-                    sbv_LS_results['LS_periods'] >= (0.5*mock_true_period) * 0.99,
-                    sbv_LS_results['LS_periods'] <= (0.5*mock_true_period) * 1.01
+                    sbv_LS_results['LS_periods'] >= mock_half_period * lo_per_check,
+                    sbv_LS_results['LS_periods'] <= mock_half_period * hi_per_check
                 ))
                 
                 binPer_full_filt_results = sbv_LS_results[binPer_full_filt]
                 binPer_half_filt_results = sbv_LS_results[binPer_half_filt]
                 
-                # Check for signals that are not at either binary period
-                # or half binary period
-                if (len(binPer_full_filt_results) + len(binPer_half_filt_results)) == 0:
+                # Check for detections at sidereal day aliases
+                sid_day_full_alias_period = np.abs(
+                    1.0/(
+                        (1/mock_true_period) - (1/self.sidereal_day)
+                    )
+                )
+                
+                sid_day_half_alias_period = np.abs(
+                    1.0/(
+                        (1/mock_half_period) - (1/self.sidereal_day)
+                    )
+                )
+                
+                sid_day_full_alias_filt = np.where(np.logical_and(
+                    sbv_LS_results['LS_periods'] >= sid_day_full_alias_period * lo_per_check,
+                    sbv_LS_results['LS_periods'] <= sid_day_full_alias_period * hi_per_check
+                ))
+            
+                sid_day_half_alias_filt = np.where(np.logical_and(
+                    sbv_LS_results['LS_periods'] >= sid_day_half_alias_period * lo_per_check,
+                    sbv_LS_results['LS_periods'] <= sid_day_half_alias_period * hi_per_check
+                ))
+                
+                sid_day_full_alias_filt_results = sbv_LS_results[sid_day_full_alias_filt]
+                sid_day_half_alias_filt_results = sbv_LS_results[sid_day_half_alias_filt]
+                
+                # Make sure signals are detected for full or half periods,
+                # with true or alias detection
+                total_num_signals = len(binPer_full_filt_results) +\
+                    len(binPer_half_filt_results) +\
+                    len(sid_day_full_alias_filt_results) +\
+                    len(sid_day_half_alias_filt_results)
+                
+                if total_num_signals == 0:
                     if print_diagnostics:
                         print('No periodic signal found at binary period')
-                    
+
                     continue
                 
                 # Perform checks for LS significance and LS significance
+                # Construct arrays for matching signals
                 matching_sigs = np.append(
                     binPer_full_filt_results['LS_bs_sigs'],
                     binPer_half_filt_results['LS_bs_sigs'],
                 )
+                matching_alias_sigs = np.append(
+                    sid_day_full_alias_filt_results['LS_bs_sigs'],
+                    sid_day_half_alias_filt_results['LS_bs_sigs'],
+                )
+                
                 matching_powers = np.append(
                     binPer_full_filt_results['LS_powers'],
                     binPer_half_filt_results['LS_powers'],
                 )
+                matching_alias_powers = np.append(
+                    sid_day_full_alias_filt_results['LS_powers'],
+                    sid_day_half_alias_filt_results['LS_powers'],
+                )
+                
                 matching_periods = np.append(
                     binPer_full_filt_results['LS_periods'],
                     binPer_half_filt_results['LS_periods'],
                 )
+                matching_alias_periods = np.append(
+                    sid_day_full_alias_filt_results['LS_periods'],
+                    sid_day_half_alias_filt_results['LS_periods'],
+                )
                 
+                # Peak properties
                 peak_sig = np.max(sbv_LS_results['LS_bs_sigs'])
                 peak_period = (sbv_LS_results['LS_periods'])[
                     np.argmax(sbv_LS_results['LS_powers'])
@@ -1610,7 +1676,13 @@ class bin_detectability(object):
                 peak_amp = (star_amp_sig_table.loc[sbv])['cos_amps']
                 peak_amp_sig = (star_amp_sig_table.loc[sbv])['cos_amp_sigs']
                 
-                # Check if most significant two peaks are consistent
+                if peak_amp < min_amp_sig_check:
+                    if print_diagnostics:
+                        print('Amplitude < min amp of {min_amp_sig_check}')
+                    
+                    continue
+                
+                # Check if most significant peak is consistent
                 # with binary detection.
                 # Make relevant flags for direct / alias detection and
                 # full / half period detection
@@ -1622,20 +1694,20 @@ class bin_detectability(object):
                 
                 sorted_powers = np.sort(sbv_LS_results['LS_powers'])
                 
-                if sorted_powers[-1] in matching_powers:
+                if (amp_match_check and peak_period in matching_periods):
                     detection_direct = True
                     
-                    if sorted_powers[-1] in binPer_full_filt_results['LS_powers']:
+                    if peak_period in binPer_full_filt_results['LS_periods']:
                         detection_full_period = True
-                    elif sorted_powers[-1] in binPer_half_filt_results['LS_powers']:
+                    elif peak_period in binPer_half_filt_results['LS_periods']:
                         detection_half_period = True
                     
-                elif len(sbv_LS_results) > 1 and sorted_powers[-2] in matching_powers:
+                elif (amp_match_check and peak_period in matching_alias_periods):
                     detection_alias = True
                     
-                    if sorted_powers[-2] in binPer_full_filt_results['LS_powers']:
+                    if peak_period in sid_day_full_alias_filt_results['LS_periods']:
                         detection_full_period = True
-                    elif sorted_powers[-2] in binPer_half_filt_results['LS_powers']:
+                    elif peak_period in sid_day_half_alias_filt_results['LS_periods']:
                         detection_half_period = True
                 
                 # Check to see if most significant peak is a detection / alias
