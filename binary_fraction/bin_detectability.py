@@ -607,8 +607,9 @@ class bin_detectability(object):
             high_sig_check = 0.95,
             min_amp_sig_check = 3.0,
             amp_sig_check = 20.0,
-            period_check_bound = 0.01,
-            amp_check_bound = 0.01,
+            min_delta_mag = 0.01,
+            period_check_bound = 0.02,
+            amp_check_bound = 0.1,
             out_bin_detect_table_root='./bin_detect',
             print_diagnostics=False,
         ):
@@ -636,10 +637,13 @@ class bin_detectability(object):
         amp_sig_check : float, default: 20.0
             Signals between low_sig_check and high_sig_check have to pass this
             bound in amp significance.
-        period_check_bound : float, default: 0.01
+        min_delta_mag : float, default: 0.01
+            All signals to be considered have to pass this bound in delta mag
+            for the mock binary.
+        period_check_bound : float, default: 0.02
             Within what percent of the real binary period to consider a
             detection to be a real detection.
-        amp_check_bound : float, default: 0.01
+        amp_check_bound : float, default: 0.1
             Within what percent in magnitudes of real binary light curve
             amplitude to consider a period detection to be a real detection.
         out_bin_detect_table_root : str, default: './bin_detect'
@@ -732,7 +736,14 @@ class bin_detectability(object):
                     print('---')
                     print(f'SBV ID: {sbv}')
                     print(f'True Binary Period: {mock_true_period:.3f} d')
-        
+                
+                # Check for mock binary amplitude being too smol
+                if mock_true_amp < min_delta_mag:
+                    if print_diagnostics:
+                        print('Mock binary mag amplitude is too small')
+                    
+                    continue
+                
                 # Check for long period getting aliased
                 longPer_filt = np.where(
                     sbv_LS_results['LS_periods'] >= self.longPer_boundary)
@@ -846,7 +857,7 @@ class bin_detectability(object):
                     print(f'cos amp / cos amp sig = {peak_amp_sig:.3f}')
                     print(f'Peak BS sig = {(peak_sig*100):.3f}%')
                 
-                if peak_amp < min_amp_sig_check:
+                if peak_amp_sig < min_amp_sig_check:
                     if print_diagnostics:
                         print('Amplitude < min amp of {min_amp_sig_check}')
                     
@@ -1440,6 +1451,9 @@ class bin_detectability(object):
             self, stars_list,
             num_mock_bins=100,
             min_amp_sig_check = 4.0,
+            min_delta_mag = 0.01,
+            period_check_bound = 0.02,
+            amp_check_bound = 0.1,
             sig_hist_table='../bin_detectability/false_true_hist.h5',
             detection_sig_levels=[
                 '4 sig', '5 sig', 'gt 5 sig',
@@ -1461,6 +1475,15 @@ class bin_detectability(object):
         min_amp_sig_check : float, default: 4.0
             All signals to be considered have to pass this bound in amp
             significance.
+        min_delta_mag : float, default: 0.01
+            All signals to be considered have to pass this bound in delta mag
+            for the mock binary.
+        period_check_bound : float, default: 0.02
+            Within what percent of the real binary period to consider a
+            detection to be a real detection.
+        amp_check_bound : float, default: 0.1
+            Within what percent in magnitudes of real binary light curve
+            amplitude to consider a period detection to be a real detection.
         sig_hist_table : str, default='../bin_detectability/false_true_hist.h5'
             Location of hdf5 astropy table with the significance regions for
             false and true detections
@@ -1523,6 +1546,10 @@ class bin_detectability(object):
         passing_sbvs_LS_sig_all = np.array([])
         passing_sbvs_sin_amp_all = np.array([])
         
+        # Construct low and high period check bounds
+        lo_per_check = 1.0 - period_check_bound
+        hi_per_check = 1.0 + period_check_bound
+        
         # Compute detectability for every star in specified sample
         for (star_index, star) in tqdm(enumerate(stars_list), total=len(stars_list)):
             # Read star model, LS, and amp sig tables
@@ -1566,12 +1593,23 @@ class bin_detectability(object):
                 mock_bin_lc_row = self.model_lc_params_table.loc[mock_bin_id]
                 
                 mock_true_period = mock_bin_row['binary_period']
-        
+                mock_true_amp = mock_bin_lc_row['delta_mag_kp']
+                
+                lo_amp_check = mock_true_amp - amp_check_bound
+                hi_amp_check = mock_true_amp + amp_check_bound
+                
                 if print_diagnostics:
                     print('---')
                     print(f'SBV ID: {sbv}')
                     print(f'True Binary Period: {mock_true_period:.3f} d')
-        
+                
+                # Check for mock binary amplitude being too smol
+                if mock_true_amp < min_delta_mag:
+                    if print_diagnostics:
+                        print('Mock binary mag amplitude is too small')
+                    
+                    continue
+                
                 # Check for long period getting aliased
                 longPer_filt = np.where(
                     sbv_LS_results['LS_periods'] >= self.longPer_boundary)
@@ -1676,7 +1714,16 @@ class bin_detectability(object):
                 peak_amp = (star_amp_sig_table.loc[sbv])['cos_amps']
                 peak_amp_sig = (star_amp_sig_table.loc[sbv])['cos_amp_sigs']
                 
-                if peak_amp < min_amp_sig_check:
+                amp_match_check = (
+                    (lo_amp_check) <= (peak_amp*2.) and
+                    (hi_amp_check) >= (peak_amp*2.)
+                )
+                
+                if print_diagnostics:
+                    print(f'cos amp / cos amp sig = {peak_amp_sig:.3f}')
+                    print(f'Peak BS sig = {(peak_sig*100):.3f}%')
+                
+                if peak_amp_sig < min_amp_sig_check:
                     if print_diagnostics:
                         print('Amplitude < min amp of {min_amp_sig_check}')
                     

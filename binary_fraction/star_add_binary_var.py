@@ -587,6 +587,7 @@ class star_add_binary_var(object):
             plot_n_rows=10, plot_n_cols=5,
             plot_figsize=(20, 10),
             main_plot_ms=15.0, sbv_plot_ms=2.0,
+            plt_style=['ticks_outtie', 'tex_paper'],
         ):
         """
         Function to plot light curves injected with binarity for the target star
@@ -620,6 +621,8 @@ class star_add_binary_var(object):
             Marker size for the main observation light curve panels
         sbv_plot_ms : float, default: 15.0
             Marker size for the SBV light curve panels
+        plt_style : [str], default: ['ticks_outtie', 'tex_paper']
+            Matplotlib style files to use when drawing the plot
         """
         
         # Make sure output directory exists
@@ -701,7 +704,7 @@ class star_add_binary_var(object):
             mag_lims_h = [1.0, -1.0]
         
         # Set up for drawing the plot
-        plt.style.use(['ticks_outtie', 'tex_paper'])
+        plt.style.use(plt_style)
         
         fig = plt.figure(figsize=plot_figsize)
         
