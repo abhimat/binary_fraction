@@ -112,6 +112,18 @@ class stellar_binary_params_calc(object):
         binary_rv_K = (2. * np.pi * binary_sma * np.sin(binary_inc * u.deg) /
                        (binary_period * u.d)).to(u.km / u.s)
         
+        # Fraction Phase of Eclipse
+        rad_tot = star1_rad + star2_rad
+        mass_tot = star1_mass + star2_mass
+        
+        binary_frac_phase_ecl = 4 * rad_tot *\
+            (2. * np.pi * (binary_period * u.d)**2. * const.G * mass_tot)**(-1./3.)
+        
+        binary_frac_phase_ecl = binary_frac_phase_ecl.to(1).value
+        
+        if binary_frac_phase_ecl > 1.5:
+            binary_frac_phase_ecl = 1.5
+        
         # Generate output tuple
         out_params = (star1_mass_init.to(u.solMass).value,
                       star1_mass.to(u.solMass).value,
@@ -131,7 +143,8 @@ class stellar_binary_params_calc(object):
                       binary_ecc, binary_inc,
                       binary_sma.to(u.AU).value,
                       binary_mass_func.to(u.solMass).value,
-                      binary_rv_K.to(u.km / u.s).value
+                      binary_rv_K.to(u.km / u.s).value,
+                      binary_frac_phase_ecl,
                      )
         return out_params
     
@@ -140,8 +153,9 @@ class stellar_binary_params_calc(object):
         
         # Read in table of binary parameters
         binary_pop_params_table = Table.read(
-                                      binary_pop_params_file,
-                                      format='ascii.fixed_width')
+            binary_pop_params_file,
+            format='ascii.fixed_width',
+        )
         
         num_binaries = len(binary_pop_params_table)
         
@@ -178,6 +192,7 @@ class stellar_binary_params_calc(object):
         binary_sma_samps = np.empty(num_binaries) * u.AU
         binary_mass_func_samps = np.empty(num_binaries) * u.solMass
         binary_rv_K_samps = np.empty(num_binaries) * u.km / u.s
+        binary_frac_phase_ecl_samps = np.empty(num_binaries)
         
         # Put parameter outputs into arrays
         for cur_bin_index in tqdm(range(num_binaries)):
@@ -191,7 +206,7 @@ class stellar_binary_params_calc(object):
                  binary_ecc, binary_inc,
                  binary_sma,
                  binary_mass_func,
-                 binary_rv_K,
+                 binary_rv_K, binary_frac_phase_ecl,
                 ) = (np.nan, np.nan, np.nan, np.nan,
                      np.nan, np.nan, np.nan,
                      np.nan, np.nan, np.nan, np.nan,
@@ -199,7 +214,7 @@ class stellar_binary_params_calc(object):
                      np.nan, np.nan, np.nan,
                      np.nan, np.nan,
                      np.nan, np.nan,
-                     np.nan
+                     np.nan, np.nan,
                     )
             else:
                 (star1_mass_init, star1_mass, star1_rad, star1_den,
@@ -210,7 +225,7 @@ class stellar_binary_params_calc(object):
                  binary_ecc, binary_inc,
                  binary_sma,
                  binary_mass_func,
-                 binary_rv_K,
+                 binary_rv_K, binary_frac_phase_ecl,
                 ) = out_params[cur_bin_index]
             
             # Stellar parameters
@@ -239,7 +254,7 @@ class stellar_binary_params_calc(object):
             binary_sma_samps[cur_bin_index] = binary_sma * u.AU
             binary_mass_func_samps[cur_bin_index] = binary_mass_func * u.solMass
             binary_rv_K_samps[cur_bin_index] = binary_rv_K * u.km / u.s
-            
+            binary_frac_phase_ecl_samps[cur_bin_index] = binary_frac_phase_ecl
         
         # Make parameter table for output
         
@@ -257,6 +272,7 @@ class stellar_binary_params_calc(object):
                               binary_ecc_samps, binary_inc_samps,
                               binary_sma_samps, binary_mass_func_samps,
                               binary_rv_K_samps,
+                              binary_frac_phase_ecl_samps,
                              ],
                              names=('binary_index',
                                     'star1_mass_init', 'star1_mass',
@@ -272,6 +288,7 @@ class stellar_binary_params_calc(object):
                                     'binary_ecc', 'binary_inc',
                                     'binary_sma', 'binary_mass_func',
                                     'binary_rv_K',
+                                    'binary_frac_phase_ecl',
                                    ),
                             )
         
