@@ -113,7 +113,7 @@ class binary_pop_light_curves(object):
             os.makedirs(out_dir)
         
         if os.path.exists(
-                '{0}/binary_{1}_mags_Kp.txt'.format(
+                '{0}/binary_{1}_mags_H.h5'.format(
                     out_dir + '/model_light_curves', int(binary_index))):
             return
 
