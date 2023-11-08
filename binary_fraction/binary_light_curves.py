@@ -267,7 +267,7 @@ class binary_pop_light_curves(object):
             self, binary_pop_params_file,
             use_blackbody_atm=False,
             out_dir='./mock_binaries',
-            parallelize=True):
+            parallelize=True, par_chunksize=10):
         # Read in table of binary parameters
         if binary_pop_params_file.endswith('.h5'):
             binary_pop_params_table = Table.read(
@@ -281,8 +281,11 @@ class binary_pop_light_curves(object):
             )
         
         ## Generate light curves for all binaries
-        parmap.map(binary_light_curve_from_binary_row, binary_pop_params_table,
-                   self, use_blackbody_atm=use_blackbody_atm, out_dir=out_dir,
-                   pm_pbar=True, pm_parallel=parallelize)
+        parmap.map(
+            binary_light_curve_from_binary_row, binary_pop_params_table,
+            self, use_blackbody_atm=use_blackbody_atm, out_dir=out_dir,
+            pm_pbar=True, pm_parallel=parallelize,
+            pm_chunksize=par_chunksize,
+        )
         
         return
