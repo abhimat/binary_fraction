@@ -134,7 +134,8 @@ class model_lc_params_calc(object):
         out_params = np.array(parmap.map(
                         params_from_bin_index,
                         binary_indexes, self,
-                        pm_pbar=True, pm_parallel=parallelize
+                        pm_pbar=True, pm_parallel=parallelize,
+                        pm_chunksize=10,
                      ))
         
         # Empty arrays to store stellar parameters
