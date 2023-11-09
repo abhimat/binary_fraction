@@ -107,6 +107,7 @@ class binary_pop_light_curves(object):
             use_blackbody_atm=False,
             out_dir='./mock_binaries',
             num_phase_points=100,
+            skip_txt_out=True,
         ):
         # Make sure output directory exists
         if not os.path.exists(out_dir):
@@ -198,23 +199,24 @@ class binary_pop_light_curves(object):
             binary_mags_Kp_table['mags_Kp'].info.format = '.6f'
             binary_mags_H_table['mags_H'].info.format = '.6f'
             
-            binary_mags_Kp_table.write(
-                '{0}/binary_{1}_mags_Kp.txt'.format(
-                    out_dir + '/model_light_curves', int(binary_index)),
-                overwrite=True, format='ascii.fixed_width',
-            )
+            if not skip_txt_out:
+                binary_mags_Kp_table.write(
+                    '{0}/binary_{1}_mags_Kp.txt'.format(
+                        out_dir + '/model_light_curves', int(binary_index)),
+                    overwrite=True, format='ascii.fixed_width',
+                )
+                
+                binary_mags_H_table.write(
+                    '{0}/binary_{1}_mags_H.txt'.format(
+                        out_dir + '/model_light_curves', int(binary_index)),
+                    overwrite=True, format='ascii.fixed_width',
+                )
             
             binary_mags_Kp_table.write(
                 '{0}/binary_{1}_mags_Kp.h5'.format(
                     out_dir + '/model_light_curves', int(binary_index)),
                 path='data', serialize_meta=True, compression=True,
                 overwrite=True,
-            )
-            
-            binary_mags_H_table.write(
-                '{0}/binary_{1}_mags_H.txt'.format(
-                    out_dir + '/model_light_curves', int(binary_index)),
-                overwrite=True, format='ascii.fixed_width',
             )
             
             binary_mags_H_table.write(
@@ -234,23 +236,24 @@ class binary_pop_light_curves(object):
                 names=('model_phases_H', 'model_times_H', 'mags_H'),
             )
             
-            binary_mags_Kp_table.write(
-                '{0}/binary_{1}_mags_Kp.txt'.format(
-                    out_dir + '/model_light_curves', int(binary_index)),
-                overwrite=True, format='ascii.fixed_width',
-            )
+            if not skip_txt_out:
+                binary_mags_Kp_table.write(
+                    '{0}/binary_{1}_mags_Kp.txt'.format(
+                        out_dir + '/model_light_curves', int(binary_index)),
+                    overwrite=True, format='ascii.fixed_width',
+                )
+                
+                binary_mags_H_table.write(
+                    '{0}/binary_{1}_mags_H.txt'.format(
+                        out_dir + '/model_light_curves', int(binary_index)),
+                    overwrite=True, format='ascii.fixed_width',
+                )
             
             binary_mags_Kp_table.write(
                 '{0}/binary_{1}_mags_Kp.h5'.format(
                     out_dir + '/model_light_curves', int(binary_index)),
                 path='data', serialize_meta=True, compression=True,
                 overwrite=True,
-            )
-            
-            binary_mags_H_table.write(
-                '{0}/binary_{1}_mags_H.txt'.format(
-                    out_dir + '/model_light_curves', int(binary_index)),
-                overwrite=True, format='ascii.fixed_width',
             )
             
             binary_mags_H_table.write(
@@ -267,7 +270,8 @@ class binary_pop_light_curves(object):
             self, binary_pop_params_file,
             use_blackbody_atm=False,
             out_dir='./mock_binaries',
-            parallelize=True, par_chunksize=10):
+            parallelize=True,
+            par_processes=32, par_chunksize=10):
         # Read in table of binary parameters
         if binary_pop_params_file.endswith('.h5'):
             binary_pop_params_table = Table.read(
@@ -285,6 +289,7 @@ class binary_pop_light_curves(object):
             binary_light_curve_from_binary_row, binary_pop_params_table,
             self, use_blackbody_atm=use_blackbody_atm, out_dir=out_dir,
             pm_pbar=True, pm_parallel=parallelize,
+            pm_processes=par_processes,
             pm_chunksize=par_chunksize,
         )
         
