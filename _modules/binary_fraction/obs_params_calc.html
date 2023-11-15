@@ -1,0 +1,216 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>binary_fraction.obs_params_calc &#8212; binary_fraction 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for binary_fraction.obs_params_calc</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="c1"># Class to calculate stellar and binary parameters for mock binary systems</span>
+<span class="c1"># ---</span>
+<span class="c1"># Abhimat Gautam</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">binary_fraction</span> <span class="kn">import</span> <span class="n">imf</span>
+<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
+<span class="kn">from</span> <span class="nn">phitter</span> <span class="kn">import</span> <span class="n">isoc_interp</span><span class="p">,</span> <span class="n">lc_calc</span>
+<span class="kn">from</span> <span class="nn">phoebe</span> <span class="kn">import</span> <span class="n">u</span>
+<span class="kn">from</span> <span class="nn">phoebe</span> <span class="kn">import</span> <span class="n">c</span> <span class="k">as</span> <span class="n">const</span>
+<span class="kn">import</span> <span class="nn">parmap</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+
+<span class="c1"># Function to help with parallelization</span>
+<div class="viewcode-block" id="params_from_bin_index"><a class="viewcode-back" href="../../autoapi/binary_fraction/obs_params_calc/index.html#binary_fraction.obs_params_calc.params_from_bin_index">[docs]</a><span class="k">def</span> <span class="nf">params_from_bin_index</span><span class="p">(</span><span class="n">binary_index</span><span class="p">,</span> <span class="n">obs_params_calc_obj</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">obs_params_calc_obj</span><span class="o">.</span><span class="n">calc_obs_params</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">binary_index</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="obs_params_calc"><a class="viewcode-back" href="../../autoapi/binary_fraction/obs_params_calc/index.html#binary_fraction.obs_params_calc.obs_params_calc">[docs]</a><span class="k">class</span> <span class="nc">obs_params_calc</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span>  <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_obs_lcs_dir</span><span class="o">=</span><span class="s1">&#39;../model_obs_light_curves/&#39;</span><span class="p">):</span>
+        <span class="c1"># Set up any defaults</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_obs_lcs_dir</span> <span class="o">=</span> <span class="n">model_obs_lcs_dir</span>
+        <span class="k">return</span>
+    
+<div class="viewcode-block" id="obs_params_calc.calc_obs_params"><a class="viewcode-back" href="../../autoapi/binary_fraction/obs_params_calc/index.html#binary_fraction.obs_params_calc.obs_params_calc.calc_obs_params">[docs]</a>    <span class="k">def</span> <span class="nf">calc_obs_params</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">binary_index</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the observational parameters (i.e. light curve stats)</span>
+<span class="sd">        for the current mock binary system</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kp_table_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_obs_lcs_dir</span><span class="si">}</span><span class="s1">/binary_</span><span class="si">{</span><span class="n">binary_index</span><span class="si">}</span><span class="s1">_mags_Kp.txt&#39;</span>
+        <span class="n">h_table_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_obs_lcs_dir</span><span class="si">}</span><span class="s1">/binary_</span><span class="si">{</span><span class="n">binary_index</span><span class="si">}</span><span class="s1">_mags_H.txt&#39;</span>
+        
+        <span class="c1"># Check if table file exists</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">kp_table_file</span><span class="p">):</span>
+            <span class="c1"># Mag generator code failed for this system</span>
+            <span class="c1"># Pass fail values</span>
+            <span class="n">output_tuple</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            
+            <span class="k">return</span> <span class="n">output_tuple</span>
+        
+        <span class="n">model_obs_mags_kp_table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
+            <span class="n">kp_table_file</span><span class="p">,</span>
+            <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.fixed_width&#39;</span><span class="p">)</span>
+        <span class="n">model_obs_mags_h_table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
+            <span class="n">h_table_file</span><span class="p">,</span>
+            <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.fixed_width&#39;</span><span class="p">)</span>
+        
+        <span class="n">mag_mean_kp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">model_obs_mags_kp_table</span><span class="p">[</span><span class="s1">&#39;mags_Kp&#39;</span><span class="p">])</span>
+        <span class="n">num_nights_kp</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_obs_mags_kp_table</span><span class="p">)</span>
+    
+        <span class="n">mag_mean_h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">model_obs_mags_h_table</span><span class="p">[</span><span class="s1">&#39;mags_H&#39;</span><span class="p">])</span>
+        <span class="n">num_nights_h</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_obs_mags_h_table</span><span class="p">)</span>
+        
+        <span class="n">output_tuple</span> <span class="o">=</span> <span class="p">(</span><span class="n">mag_mean_kp</span><span class="p">,</span> <span class="n">num_nights_kp</span><span class="p">,</span> <span class="n">mag_mean_h</span><span class="p">,</span> <span class="n">num_nights_h</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">output_tuple</span></div>
+    
+<div class="viewcode-block" id="obs_params_calc.calc_population_params"><a class="viewcode-back" href="../../autoapi/binary_fraction/obs_params_calc/index.html#binary_fraction.obs_params_calc.obs_params_calc.calc_population_params">[docs]</a>    <span class="k">def</span> <span class="nf">calc_population_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">binary_pop_params_file</span><span class="p">,</span>
+            <span class="n">parallelize</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        
+        <span class="c1"># Read in table of binary parameters</span>
+        <span class="n">binary_pop_params_table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
+                                      <span class="n">binary_pop_params_file</span><span class="p">,</span>
+                                      <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.fixed_width&#39;</span><span class="p">)</span>
+        
+        <span class="n">binary_indexes</span> <span class="o">=</span> <span class="n">binary_pop_params_table</span><span class="p">[</span><span class="s1">&#39;binary_index&#39;</span><span class="p">]</span>
+        <span class="n">num_binaries</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">binary_indexes</span><span class="p">)</span>
+        
+        <span class="c1"># Generate stellar and binary parameters for all mock binaries</span>
+        <span class="n">out_params</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">parmap</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
+                        <span class="n">params_from_bin_index</span><span class="p">,</span>
+                        <span class="n">binary_indexes</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span>
+                        <span class="n">pm_pbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">pm_parallel</span><span class="o">=</span><span class="n">parallelize</span>
+                     <span class="p">))</span>
+        
+        <span class="c1"># Empty arrays to store stellar parameters</span>
+        <span class="n">mag_mean_kp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_binaries</span><span class="p">)</span>
+        <span class="n">num_nights_kp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_binaries</span><span class="p">)</span>
+        <span class="n">mag_mean_h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_binaries</span><span class="p">)</span>
+        <span class="n">num_nights_h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_binaries</span><span class="p">)</span>
+
+        <span class="c1"># Put parameter outputs into arrays</span>
+        <span class="k">for</span> <span class="n">cur_bin_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_binaries</span><span class="p">):</span>
+            <span class="p">(</span><span class="n">mag_mean_kp</span><span class="p">[</span><span class="n">cur_bin_index</span><span class="p">],</span> <span class="n">num_nights_kp</span><span class="p">[</span><span class="n">cur_bin_index</span><span class="p">],</span>
+             <span class="n">mag_mean_h</span><span class="p">[</span><span class="n">cur_bin_index</span><span class="p">],</span> <span class="n">num_nights_h</span><span class="p">[</span><span class="n">cur_bin_index</span><span class="p">],</span> 
+            <span class="p">)</span> <span class="o">=</span> <span class="n">out_params</span><span class="p">[</span><span class="n">cur_bin_index</span><span class="p">]</span>
+        
+        <span class="c1"># Make parameter table for output</span>
+        <span class="n">params_table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">([</span><span class="nb">range</span><span class="p">(</span><span class="n">num_binaries</span><span class="p">),</span>
+                              <span class="n">mag_mean_kp</span><span class="p">,</span>
+                              <span class="n">num_nights_kp</span><span class="p">,</span>
+                              <span class="n">mag_mean_h</span><span class="p">,</span>
+                              <span class="n">num_nights_h</span><span class="p">,</span>
+                             <span class="p">],</span>
+                             <span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;binary_index&#39;</span><span class="p">,</span>
+                                    <span class="s1">&#39;mag_mean_kp&#39;</span><span class="p">,</span>
+                                    <span class="s1">&#39;num_nights_kp&#39;</span><span class="p">,</span>
+                                    <span class="s1">&#39;mag_mean_h&#39;</span><span class="p">,</span>
+                                    <span class="s1">&#39;num_nights_h&#39;</span><span class="p">,</span>
+                                   <span class="p">),</span>
+                            <span class="p">)</span>
+        
+        <span class="n">params_table</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;binary_obs_params.h5&#39;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span>
+                           <span class="n">serialize_meta</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                           <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="n">params_table</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;binary_obs_params.txt&#39;</span><span class="p">,</span>
+                           <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.fixed_width&#39;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="k">return</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">binary_fraction</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Abhimat K. Gautam.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

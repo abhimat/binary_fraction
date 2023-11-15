@@ -1,0 +1,200 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>binary_fraction.mcmc_fit_trend_sinusoid &#8212; binary_fraction 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="binary_fraction.model_lc_params_calc" href="../model_lc_params_calc/index.html" />
+    <link rel="prev" title="binary_fraction.imf" href="../imf/index.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-binary_fraction.mcmc_fit_trend_sinusoid">
+<span id="binary-fraction-mcmc-fit-trend-sinusoid"></span><h1><a class="reference internal" href="#module-binary_fraction.mcmc_fit_trend_sinusoid" title="binary_fraction.mcmc_fit_trend_sinusoid"><code class="xref py py-mod docutils literal notranslate"><span class="pre">binary_fraction.mcmc_fit_trend_sinusoid</span></code></a><a class="headerlink" href="#module-binary_fraction.mcmc_fit_trend_sinusoid" title="Permalink to this heading">¶</a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading">¶</a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this heading">¶</a></h3>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter" title="binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mcmc_fitter</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">binary_fraction.mcmc_fit_trend_sinusoid.</span></span><span class="sig-name descname"><span class="pre">mcmc_fitter</span></span><a class="reference internal" href="../../../_modules/binary_fraction/mcmc_fit_trend_sinusoid.html#mcmc_fitter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.poly_trend_order_base">
+<span class="sig-name descname"><span class="pre">poly_trend_order_base</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="reference internal" href="../../../_modules/binary_fraction/mcmc_fit_trend_sinusoid.html#mcmc_fitter.poly_trend_order_base"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.poly_trend_order_base" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.fit_flux">
+<span class="sig-name descname"><span class="pre">fit_flux</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="reference internal" href="../../../_modules/binary_fraction/mcmc_fit_trend_sinusoid.html#mcmc_fitter.fit_flux"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.fit_flux" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_poly_trend_order_base">
+<span class="sig-name descname"><span class="pre">set_poly_trend_order_base</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">poly_trend_order_base</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/mcmc_fit_trend_sinusoid.html#mcmc_fitter.set_poly_trend_order_base"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_poly_trend_order_base" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_t0">
+<span class="sig-name descname"><span class="pre">set_t0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/mcmc_fit_trend_sinusoid.html#mcmc_fitter.set_t0"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_t0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_period">
+<span class="sig-name descname"><span class="pre">set_period</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">period</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/mcmc_fit_trend_sinusoid.html#mcmc_fitter.set_period"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_period" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_observation_filts">
+<span class="sig-name descname"><span class="pre">set_observation_filts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_filts</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/mcmc_fit_trend_sinusoid.html#mcmc_fitter.set_observation_filts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_observation_filts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_observation_times">
+<span class="sig-name descname"><span class="pre">set_observation_times</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_days</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/mcmc_fit_trend_sinusoid.html#mcmc_fitter.set_observation_times"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_observation_times" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_observations">
+<span class="sig-name descname"><span class="pre">set_observations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_errors</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/mcmc_fit_trend_sinusoid.html#mcmc_fitter.set_observations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_observations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.log_prior">
+<span class="sig-name descname"><span class="pre">log_prior</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/mcmc_fit_trend_sinusoid.html#mcmc_fitter.log_prior"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.log_prior" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.log_likelihood">
+<span class="sig-name descname"><span class="pre">log_likelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">print_checks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/mcmc_fit_trend_sinusoid.html#mcmc_fitter.log_likelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.log_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.log_probability">
+<span class="sig-name descname"><span class="pre">log_probability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/mcmc_fit_trend_sinusoid.html#mcmc_fitter.log_probability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.log_probability" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">binary_fraction</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">binary_fraction</span></code></a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../index.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">API Reference</a><ul>
+  <li><a href="../index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">binary_fraction</span></code></a><ul>
+      <li>Previous: <a href="../imf/index.html" title="previous chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">binary_fraction.imf</span></code></a></li>
+      <li>Next: <a href="../model_lc_params_calc/index.html" title="next chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">binary_fraction.model_lc_params_calc</span></code></a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Abhimat K. Gautam.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../../../_sources/autoapi/binary_fraction/mcmc_fit_trend_sinusoid/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

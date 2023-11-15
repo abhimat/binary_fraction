@@ -1,0 +1,341 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>binary_fraction.bin_detectability &#8212; binary_fraction 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="binary_fraction.binary_light_curves" href="../binary_light_curves/index.html" />
+    <link rel="prev" title="binary_fraction" href="../index.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-binary_fraction.bin_detectability">
+<span id="binary-fraction-bin-detectability"></span><h1><a class="reference internal" href="#module-binary_fraction.bin_detectability" title="binary_fraction.bin_detectability"><code class="xref py py-mod docutils literal notranslate"><span class="pre">binary_fraction.bin_detectability</span></code></a><a class="headerlink" href="#module-binary_fraction.bin_detectability" title="Permalink to this heading">¶</a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading">¶</a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this heading">¶</a></h3>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#binary_fraction.bin_detectability.bin_detectability" title="binary_fraction.bin_detectability.bin_detectability"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bin_detectability</span></code></a></p></td>
+<td><p>Object to determine detection of injected mock binary signals</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">binary_fraction.bin_detectability.</span></span><span class="sig-name descname"><span class="pre">bin_detectability</span></span><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Object to determine detection of injected mock binary signals
+with periodicity search</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability.sidereal_day">
+<span class="sig-name descname"><span class="pre">sidereal_day</span></span><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability.sidereal_day"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability.sidereal_day" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability.longPer_boundary">
+<span class="sig-name descname"><span class="pre">longPer_boundary</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">365.25</span></em><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability.longPer_boundary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability.longPer_boundary" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability.longPer_BSSig_boundary">
+<span class="sig-name descname"><span class="pre">longPer_BSSig_boundary</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.5</span></em><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability.longPer_BSSig_boundary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability.longPer_BSSig_boundary" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability.num_cores">
+<span class="sig-name descname"><span class="pre">num_cores</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">32</span></em><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability.num_cores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability.num_cores" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability.set_sbv_dir">
+<span class="sig-name descname"><span class="pre">set_sbv_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sbv_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../star_bin_var/'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability.set_sbv_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability.set_sbv_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set sbv_dir variable for class, where the light curves
+with injected binary variability live.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>sbv_dir</strong><span class="classifier">str, default: ‘../star_bin_var/’</span></dt><dd><p>Directory where the injected bin var light curves are stored</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability.load_sbv_sample_table">
+<span class="sig-name descname"><span class="pre">load_sbv_sample_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'sample_table.txt'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability.load_sbv_sample_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability.load_sbv_sample_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the SBV sample table</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability.load_model_sb_params_table">
+<span class="sig-name descname"><span class="pre">load_model_sb_params_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_file_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../stellar_binary_params.h5'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability.load_model_sb_params_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability.load_model_sb_params_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the binary model light curve parameters table. Assumes table is
+stored in astropy tables hdf5 format</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>table_file_path</strong><span class="classifier">str, default: ‘../stellar_binary_params.h5’</span></dt><dd><p>File path of the stellar binary parameters table</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability.load_model_lc_params_table">
+<span class="sig-name descname"><span class="pre">load_model_lc_params_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_file_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'./binary_model_lc_params.h5'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability.load_model_lc_params_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability.load_model_lc_params_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the binary model light curve parameters table</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability.read_align_data">
+<span class="sig-name descname"><span class="pre">read_align_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">align_kp_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">align_h_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">align_data_location</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/g/ghez/abhimat/datasets/align_data_py3/'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability.read_align_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability.read_align_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set and read the photometry align data being used for
+determining phot uncertainty to add to observation data points</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability.fit_trended_sinusoid">
+<span class="sig-name descname"><span class="pre">fit_trended_sinusoid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">poly_trend_order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">period</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mags</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mag_errors</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_days</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obs_filts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mp_pool</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_initial_LS</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_initial_polyfit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_MCMC_progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mcmc_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">print_diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability.fit_trended_sinusoid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability.fit_trended_sinusoid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run MCMC fit for trended sinusoid</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability.compute_amp_sig">
+<span class="sig-name descname"><span class="pre">compute_amp_sig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">star</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_mock_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_sig_check</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">print_diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mp_pool</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability.compute_amp_sig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability.compute_amp_sig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the amplitude significance of possible binary detection signals.
+Outputs table with significance of cos amplitude, and if binary
+detection was consistent with period or half period within 1 percent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>star</strong><span class="classifier">str</span></dt><dd><p>Star name to compute the amplitude significance for</p>
+</dd>
+<dt><strong>num_mock_bins</strong><span class="classifier">int, default: 50</span></dt><dd><p>Number of mock binary signals injected into light curve.
+i.e.: the number of SBVs for every sample star.</p>
+</dd>
+<dt><strong>low_sig_check</strong><span class="classifier">float, default: 0.60</span></dt><dd><p>Lowest bootstrap false alarm significance to conside</p>
+</dd>
+<dt><strong>print_diagnostics</strong><span class="classifier">bool, default: False</span></dt><dd><p>Whether or not to print diagnostic messages while running</p>
+</dd>
+<dt><strong>mp_pool</strong><span class="classifier">Pool object, default: None</span></dt><dd><p>Pool to use for parallel processing.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability.compute_detectability_basic_sig_checks">
+<span class="sig-name descname"><span class="pre">compute_detectability_basic_sig_checks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stars_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_mock_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_sig_check</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_sig_check</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_amp_sig_check</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amp_sig_check</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_delta_mag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">period_check_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amp_check_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_bin_detect_table_root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'./bin_detect'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">print_diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability.compute_detectability_basic_sig_checks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability.compute_detectability_basic_sig_checks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the detectability of the injected light curves for the
+stars provided in stars_list</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>stars_list</strong><span class="classifier">list[str]</span></dt><dd><p>List of star names to compute the detectability for</p>
+</dd>
+<dt><strong>num_mock_bins</strong><span class="classifier">int, default: 50</span></dt><dd><p>Number of mock binary signals injected into light curve.
+i.e.: the number of SBVs for every sample star.</p>
+</dd>
+<dt><strong>low_sig_check</strong><span class="classifier">float, default: 0.70</span></dt><dd><p>The lowest false alarm significance to consider. Signals above this,
+but below high_sig_check, have to pass amp_sig_check in amp
+significance.</p>
+</dd>
+<dt><strong>high_sig_check</strong><span class="classifier">float, default: 0.95</span></dt><dd><p>Signals above this false alarm significance only have to pass
+min_amp_sig_check in amp significance.</p>
+</dd>
+<dt><strong>min_amp_sig_check</strong><span class="classifier">float, default: 3.0</span></dt><dd><p>All signals to be considered have to pass this bound in amp
+significance.</p>
+</dd>
+<dt><strong>amp_sig_check</strong><span class="classifier">float, default: 20.0</span></dt><dd><p>Signals between low_sig_check and high_sig_check have to pass this
+bound in amp significance.</p>
+</dd>
+<dt><strong>min_delta_mag</strong><span class="classifier">float, default: 0.01</span></dt><dd><p>All signals to be considered have to pass this bound in delta mag
+for the mock binary.</p>
+</dd>
+<dt><strong>period_check_bound</strong><span class="classifier">float, default: 0.02</span></dt><dd><p>Within what percent of the real binary period to consider a
+detection to be a real detection.</p>
+</dd>
+<dt><strong>amp_check_bound</strong><span class="classifier">float, default: 0.1</span></dt><dd><p>Within what percent in magnitudes of real binary light curve
+amplitude to consider a period detection to be a real detection.</p>
+</dd>
+<dt><strong>out_bin_detect_table_root</strong><span class="classifier">str, default: ‘./bin_detect’</span></dt><dd><p>The root file name of the out table files</p>
+</dd>
+<dt><strong>print_diagnostics</strong><span class="classifier">bool, default: False</span></dt><dd><p>Whether or not to print diagnostic messages while running</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability.costruct_sig_amp_table">
+<span class="sig-name descname"><span class="pre">costruct_sig_amp_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">skip_stars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['irs16SW',</span> <span class="pre">'S4-258',</span> <span class="pre">'S2-36']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bin_detect_table_root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'./bin_detect'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">print_diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability.costruct_sig_amp_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability.costruct_sig_amp_table" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability.construct_sig_hists">
+<span class="sig-name descname"><span class="pre">construct_sig_hists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sig_amp_table_root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'./bin_detect'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">print_diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">LS_sig_bin_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sin_sig_bin_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability.construct_sig_hists"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability.construct_sig_hists" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.bin_detectability.bin_detectability.compute_detectability">
+<span class="sig-name descname"><span class="pre">compute_detectability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stars_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_mock_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_amp_sig_check</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_delta_mag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">period_check_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amp_check_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sig_hist_table</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../bin_detectability/false_true_hist.h5'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">detection_sig_levels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['4</span> <span class="pre">sig',</span> <span class="pre">'5</span> <span class="pre">sig',</span> <span class="pre">'gt</span> <span class="pre">5</span> <span class="pre">sig']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_bin_detect_table_root</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'./bin_detect'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">print_diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/bin_detectability.html#bin_detectability.compute_detectability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.bin_detectability.bin_detectability.compute_detectability" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the detectability of the injected light curves for the
+stars provided in stars_list</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>stars_list</strong><span class="classifier">list[str]</span></dt><dd><p>List of star names to compute the detectability for</p>
+</dd>
+<dt><strong>num_mock_bins</strong><span class="classifier">int, default: 50</span></dt><dd><p>Number of mock binary signals injected into light curve.
+i.e.: the number of SBVs for every sample star.</p>
+</dd>
+<dt><strong>min_amp_sig_check</strong><span class="classifier">float, default: 4.0</span></dt><dd><p>All signals to be considered have to pass this bound in amp
+significance.</p>
+</dd>
+<dt><strong>min_delta_mag</strong><span class="classifier">float, default: 0.01</span></dt><dd><p>All signals to be considered have to pass this bound in delta mag
+for the mock binary.</p>
+</dd>
+<dt><strong>period_check_bound</strong><span class="classifier">float, default: 0.02</span></dt><dd><p>Within what percent of the real binary period to consider a
+detection to be a real detection.</p>
+</dd>
+<dt><strong>amp_check_bound</strong><span class="classifier">float, default: 0.1</span></dt><dd><p>Within what percent in magnitudes of real binary light curve
+amplitude to consider a period detection to be a real detection.</p>
+</dd>
+<dt><strong>sig_hist_table</strong><span class="classifier">str, default=’../bin_detectability/false_true_hist.h5’</span></dt><dd><p>Location of hdf5 astropy table with the significance regions for
+false and true detections</p>
+</dd>
+<dt><strong>detection_sig_levels</strong><span class="classifier">[str], default: [‘4 sig’, ‘5 sig’, ‘gt 5 sig’,]</span></dt><dd><p>Column significance values to consider detected in the
+sig_hist_table</p>
+</dd>
+<dt><strong>out_bin_detect_table_root</strong><span class="classifier">str, default: ‘./bin_detect’</span></dt><dd><p>The root file name of the out table files</p>
+</dd>
+<dt><strong>print_diagnostics</strong><span class="classifier">bool, default: False</span></dt><dd><p>Whether or not to print diagnostic messages while running</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">binary_fraction</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">binary_fraction</span></code></a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../index.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">API Reference</a><ul>
+  <li><a href="../index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">binary_fraction</span></code></a><ul>
+      <li>Previous: <a href="../index.html" title="previous chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">binary_fraction</span></code></a></li>
+      <li>Next: <a href="../binary_light_curves/index.html" title="next chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">binary_fraction.binary_light_curves</span></code></a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Abhimat K. Gautam.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../../../_sources/autoapi/binary_fraction/bin_detectability/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

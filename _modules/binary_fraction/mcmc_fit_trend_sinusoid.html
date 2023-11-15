@@ -1,0 +1,290 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>binary_fraction.mcmc_fit_trend_sinusoid &#8212; binary_fraction 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for binary_fraction.mcmc_fit_trend_sinusoid</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="c1"># MCMC classes</span>
+<span class="c1"># for fitting stellar fluxes to a trended sinusoid,</span>
+<span class="c1"># with long-term polynomial trends</span>
+<span class="c1"># ---</span>
+<span class="c1"># Abhimat Gautam</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<div class="viewcode-block" id="mcmc_fitter"><a class="viewcode-back" href="../../autoapi/binary_fraction/mcmc_fit_trend_sinusoid/index.html#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter">[docs]</a><span class="k">class</span> <span class="nc">mcmc_fitter</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="mcmc_fitter.poly_trend_order_base"><a class="viewcode-back" href="../../autoapi/binary_fraction/mcmc_fit_trend_sinusoid/index.html#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.poly_trend_order_base">[docs]</a>    <span class="n">poly_trend_order_base</span> <span class="o">=</span> <span class="mi">1</span></div>
+<div class="viewcode-block" id="mcmc_fitter.fit_flux"><a class="viewcode-back" href="../../autoapi/binary_fraction/mcmc_fit_trend_sinusoid/index.html#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.fit_flux">[docs]</a>    <span class="n">fit_flux</span> <span class="o">=</span> <span class="kc">False</span></div>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span>
+    
+    <span class="c1"># Function to set polynomial trend order</span>
+<div class="viewcode-block" id="mcmc_fitter.set_poly_trend_order_base"><a class="viewcode-back" href="../../autoapi/binary_fraction/mcmc_fit_trend_sinusoid/index.html#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_poly_trend_order_base">[docs]</a>    <span class="k">def</span> <span class="nf">set_poly_trend_order_base</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">poly_trend_order_base</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">poly_trend_order_base</span> <span class="o">=</span> <span class="n">poly_trend_order_base</span></div>
+    
+    <span class="c1"># Functions to set fit specifics</span>
+<div class="viewcode-block" id="mcmc_fitter.set_t0"><a class="viewcode-back" href="../../autoapi/binary_fraction/mcmc_fit_trend_sinusoid/index.html#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_t0">[docs]</a>    <span class="k">def</span> <span class="nf">set_t0</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t0</span> <span class="o">=</span> <span class="n">t0</span></div>
+    
+<div class="viewcode-block" id="mcmc_fitter.set_period"><a class="viewcode-back" href="../../autoapi/binary_fraction/mcmc_fit_trend_sinusoid/index.html#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_period">[docs]</a>    <span class="k">def</span> <span class="nf">set_period</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">period</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">period</span> <span class="o">=</span> <span class="n">period</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">omega</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="n">period</span></div>
+    
+    <span class="c1"># Function to set observation filters</span>
+<div class="viewcode-block" id="mcmc_fitter.set_observation_filts"><a class="viewcode-back" href="../../autoapi/binary_fraction/mcmc_fit_trend_sinusoid/index.html#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_observation_filts">[docs]</a>    <span class="k">def</span> <span class="nf">set_observation_filts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs_filts</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_filts</span> <span class="o">=</span> <span class="n">obs_filts</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">kp_obs_filt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_filts</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;kp&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_obs_filt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_filts</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;h&#39;</span><span class="p">)</span></div>
+    
+    <span class="c1"># Function to set observation times</span>
+<div class="viewcode-block" id="mcmc_fitter.set_observation_times"><a class="viewcode-back" href="../../autoapi/binary_fraction/mcmc_fit_trend_sinusoid/index.html#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_observation_times">[docs]</a>    <span class="k">def</span> <span class="nf">set_observation_times</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs_days</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_days</span> <span class="o">=</span> <span class="n">obs_days</span></div>
+    
+    <span class="c1"># Function to set observation mags</span>
+<div class="viewcode-block" id="mcmc_fitter.set_observations"><a class="viewcode-back" href="../../autoapi/binary_fraction/mcmc_fit_trend_sinusoid/index.html#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.set_observations">[docs]</a>    <span class="k">def</span> <span class="nf">set_observations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">obs_errors</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs</span> <span class="o">=</span> <span class="n">obs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_errors</span> <span class="o">=</span> <span class="n">obs_errors</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">kp_obs_mags</span> <span class="o">=</span> <span class="n">obs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">kp_obs_filt</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kp_obs_mag_errors</span> <span class="o">=</span> <span class="n">obs_errors</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">kp_obs_filt</span><span class="p">]</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_obs_mags</span> <span class="o">=</span> <span class="n">obs</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">h_obs_filt</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_obs_mag_errors</span> <span class="o">=</span> <span class="n">obs_errors</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">h_obs_filt</span><span class="p">]</span></div>
+    
+    
+    <span class="c1"># Prior function</span>
+<div class="viewcode-block" id="mcmc_fitter.log_prior"><a class="viewcode-back" href="../../autoapi/binary_fraction/mcmc_fit_trend_sinusoid/index.html#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.log_prior">[docs]</a>    <span class="k">def</span> <span class="nf">log_prior</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+        <span class="c1"># Extract model parameters from theta</span>
+        <span class="n">theta_index</span> <span class="o">=</span> <span class="mi">0</span>
+        
+        <span class="n">t0_fit</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="n">theta_index</span><span class="p">]</span>
+        <span class="n">theta_index</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="n">base_poly_trend_coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">poly_trend_order_base</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">poly_coeff_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">poly_trend_order_base</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">base_poly_trend_coeffs</span><span class="p">[</span><span class="n">poly_coeff_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="n">theta_index</span><span class="p">]</span>
+            <span class="n">theta_index</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="n">base_cos_coeff</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="n">theta_index</span><span class="p">]</span>
+        <span class="n">theta_index</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h_obs_mags</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">h_add</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="n">theta_index</span><span class="p">]</span>
+            <span class="n">theta_index</span> <span class="o">+=</span> <span class="mi">1</span>
+            
+            <span class="n">h_c1</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="n">theta_index</span><span class="p">]</span>
+            <span class="n">theta_index</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="c1"># Check all params</span>
+        <span class="n">t0_check</span> <span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">t0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">period</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span> <span class="o">&lt;</span> 
+                    <span class="n">t0_fit</span> <span class="o">&lt;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">period</span><span class="o">/</span><span class="mf">2.</span><span class="p">))</span>
+        
+        <span class="n">base_check</span> <span class="o">=</span> <span class="p">(</span><span class="mi">9</span> <span class="o">&lt;</span> <span class="n">base_poly_trend_coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">22</span> <span class="ow">and</span>
+                      <span class="o">-</span><span class="mf">1e-1</span> <span class="o">&lt;</span> <span class="n">base_poly_trend_coeffs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">1e-1</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_flux</span><span class="p">:</span>
+            <span class="n">base_check</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1e-18</span> <span class="o">&lt;</span> <span class="n">base_poly_trend_coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">1e6</span> <span class="ow">and</span>
+                          <span class="o">-</span><span class="mf">1e-1</span> <span class="o">&lt;</span> <span class="n">base_poly_trend_coeffs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">1e-1</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">base_check</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">poly_trend_order_base</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">poly_coeff_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">poly_trend_order_base</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="o">-</span><span class="mf">1e-2</span> <span class="o">&lt;</span> <span class="n">base_poly_trend_coeffs</span><span class="p">[</span><span class="n">poly_coeff_index</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">1e-2</span><span class="p">):</span>
+                    <span class="n">base_check</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">break</span>
+        
+        <span class="n">cos_check</span> <span class="o">=</span> <span class="mf">1e-2</span> <span class="o">&lt;</span> <span class="n">base_cos_coeff</span> <span class="o">&lt;</span> <span class="mf">0.8</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_flux</span><span class="p">:</span>
+            <span class="n">cos_check</span> <span class="o">=</span> <span class="kc">True</span>
+        
+        <span class="n">h_check</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h_obs_mags</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">h_check</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">10</span> <span class="o">&lt;</span> <span class="n">h_add</span> <span class="o">&lt;</span> <span class="mi">10</span> <span class="ow">and</span>
+                       <span class="o">-</span><span class="mf">1e-2</span> <span class="o">&lt;</span> <span class="n">h_c1</span> <span class="o">&lt;</span> <span class="mf">1e-2</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_flux</span><span class="p">:</span>
+                <span class="n">h_check</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1e-2</span> <span class="o">&lt;</span> <span class="n">h_c1</span> <span class="o">&lt;</span> <span class="mf">1e-2</span>
+        
+        
+        <span class="k">if</span> <span class="n">t0_check</span> <span class="ow">and</span> <span class="n">base_check</span> <span class="ow">and</span> <span class="n">cos_check</span> <span class="ow">and</span> <span class="n">h_check</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+        
+        <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span></div>
+    
+    <span class="c1"># Likelihood function</span>
+<div class="viewcode-block" id="mcmc_fitter.log_likelihood"><a class="viewcode-back" href="../../autoapi/binary_fraction/mcmc_fit_trend_sinusoid/index.html#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.log_likelihood">[docs]</a>    <span class="k">def</span> <span class="nf">log_likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">print_checks</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="c1"># Extract model parameters from theta</span>
+        <span class="n">theta_index</span> <span class="o">=</span> <span class="mi">0</span>
+        
+        <span class="n">t0_fit</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="n">theta_index</span><span class="p">]</span>
+        <span class="n">theta_index</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="n">base_poly_trend_coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">poly_trend_order_base</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">poly_coeff_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">poly_trend_order_base</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">base_poly_trend_coeffs</span><span class="p">[</span><span class="n">poly_coeff_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="n">theta_index</span><span class="p">]</span>
+            <span class="n">theta_index</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="n">base_cos_coeff</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="n">theta_index</span><span class="p">]</span>
+        <span class="n">theta_index</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h_obs_mags</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">h_add</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="n">theta_index</span><span class="p">]</span>
+            <span class="n">theta_index</span> <span class="o">+=</span> <span class="mi">1</span>
+            
+            <span class="n">h_c1</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="n">theta_index</span><span class="p">]</span>
+            <span class="n">theta_index</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="c1"># Compute model mags</span>
+        <span class="n">model_mags</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="p">)</span><span class="o">*</span><span class="mf">0.</span>
+    
+        <span class="n">t_term</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_days</span> <span class="o">-</span> <span class="n">t0_fit</span><span class="p">)</span>
+        
+        <span class="c1"># Base polynomial model</span>
+        <span class="k">for</span> <span class="n">poly_coeff_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">poly_trend_order_base</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">model_mags</span> <span class="o">+=</span> <span class="p">(</span><span class="n">t_term</span><span class="o">**</span><span class="n">poly_coeff_index</span> <span class="o">*</span>
+                           <span class="n">base_poly_trend_coeffs</span><span class="p">[</span><span class="n">poly_coeff_index</span><span class="p">])</span>
+        
+        <span class="c1"># Base sinusoid model</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_flux</span><span class="p">:</span>
+            <span class="n">base_cos_coeff</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">base_cos_coeff</span>
+        
+        <span class="n">model_mags</span> <span class="o">+=</span> <span class="n">base_cos_coeff</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">omega</span> <span class="o">*</span> <span class="n">t_term</span><span class="p">)</span>
+        
+        <span class="c1"># # Kp mags</span>
+        <span class="c1"># model_mags[kp_obs_filt] += 0.0 +\</span>
+        <span class="c1">#     ((obs_days[kp_obs_filt] - t0_fit) * kp_c1)</span>
+        
+        <span class="c1"># H mags</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h_obs_mags</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">model_mags</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">h_obs_filt</span><span class="p">]</span> <span class="o">+=</span> <span class="n">h_add</span> <span class="o">+</span>\
+                <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_days</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">h_obs_filt</span><span class="p">]</span> <span class="o">-</span> <span class="n">t0_fit</span><span class="p">)</span> <span class="o">*</span> <span class="n">h_c1</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">print_checks</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;All mags: </span><span class="si">{</span><span class="n">model_mags</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Observed mags: </span><span class="si">{</span><span class="n">mags</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Kp mags: </span><span class="si">{</span><span class="n">model_mags</span><span class="p">[</span><span class="n">kp_obs_filt</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Observed Kp mags: </span><span class="si">{</span><span class="n">mags</span><span class="p">[</span><span class="n">kp_obs_filt</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;H mags: </span><span class="si">{</span><span class="n">model_mags</span><span class="p">[</span><span class="n">h_obs_filt</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Observed H mags: </span><span class="si">{</span><span class="n">mags</span><span class="p">[</span><span class="n">h_obs_filt</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    
+        <span class="c1"># Uncertainties</span>
+        <span class="n">sigma_sq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_errors</span> <span class="o">**</span> <span class="mf">2.</span>
+    
+        <span class="k">return</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(((</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">-</span><span class="n">model_mags</span><span class="p">)</span><span class="o">**</span><span class="mf">2.</span><span class="p">)</span> <span class="o">/</span> <span class="n">sigma_sq</span> <span class="o">+</span>\
+               <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">sigma_sq</span><span class="p">))</span></div>
+    
+    <span class="c1"># Posterior probability function</span>
+<div class="viewcode-block" id="mcmc_fitter.log_probability"><a class="viewcode-back" href="../../autoapi/binary_fraction/mcmc_fit_trend_sinusoid/index.html#binary_fraction.mcmc_fit_trend_sinusoid.mcmc_fitter.log_probability">[docs]</a>    <span class="k">def</span> <span class="nf">log_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+        <span class="n">lp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_prior</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">lp</span><span class="p">):</span>
+            <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+        <span class="k">return</span> <span class="n">lp</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_likelihood</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span></div></div>
+    
+    
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">binary_fraction</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Abhimat K. Gautam.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

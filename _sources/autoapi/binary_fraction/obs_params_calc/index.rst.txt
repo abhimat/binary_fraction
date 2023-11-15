@@ -1,0 +1,62 @@
+:py:mod:`binary_fraction.obs_params_calc`
+=========================================
+
+.. py:module:: binary_fraction.obs_params_calc
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   binary_fraction.obs_params_calc.obs_params_calc
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   binary_fraction.obs_params_calc.params_from_bin_index
+
+
+
+.. py:function:: params_from_bin_index(binary_index, obs_params_calc_obj)
+
+
+.. py:class:: obs_params_calc(model_obs_lcs_dir='../model_obs_light_curves/')
+
+   Bases: :py:obj:`object`
+
+   .. py:method:: calc_obs_params(binary_index)
+
+      
+      Calculate the observational parameters (i.e. light curve stats)
+      for the current mock binary system
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: calc_population_params(binary_pop_params_file, parallelize=True)
+
+
+

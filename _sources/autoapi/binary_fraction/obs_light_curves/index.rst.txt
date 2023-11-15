@@ -1,0 +1,191 @@
+:py:mod:`binary_fraction.obs_light_curves`
+==========================================
+
+.. py:module:: binary_fraction.obs_light_curves
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   binary_fraction.obs_light_curves.calc_obs_uncs
+   binary_fraction.obs_light_curves.add_obs_uncs
+
+
+
+
+.. py:class:: calc_obs_uncs
+
+   Bases: :py:obj:`object`
+
+   
+   Class for calculating uncertainties in each observation epoch
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+   .. py:method:: read_align_data(align_kp_name, align_h_name, align_data_location='/g/ghez/abhimat/datasets/align_data_py3/')
+
+      
+      Set and read the photometry align data being used for
+      determining phot uncertainty to add to observation data points
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: construct_align_mag_arrays()
+
+      
+      Construct the mag arrays needed for subsequent calculation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: calc_epochs_mag_uncs()
+
+      
+      Calculate the magnitude uncertainties in bins of magnitude
+      for each epoch in the aligns used
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+
+.. py:class:: add_obs_uncs
+
+   Bases: :py:obj:`object`
+
+   
+   Class for adding obs uncertainties from each observation epoch
+   to binary star model mags
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+   .. py:method:: read_epoch_uncs(num_epochs_kp, num_epochs_h, uncs_dir='./obs_uncertainties/')
+
+      
+      Read in and store mag uncertainties for each epoch
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: apply_mag_uncs(model_number, model_lcs_dir='./mock_binaries/model_light_curves/', model_obs_lcs_dir='./mock_binaries/model_obs_light_curves/')
+
+      
+      Apply obs uncertainties to model magnitudes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: apply_mag_uncs_range(model_number_range, model_lcs_dir='./mock_binaries/model_light_curves/', model_obs_lcs_dir='./mock_binaries/model_obs_light_curves/')
+
+
+

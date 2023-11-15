@@ -1,0 +1,48 @@
+:py:mod:`binary_fraction.distributions`
+=======================================
+
+.. py:module:: binary_fraction.distributions
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   binary_fraction.distributions.power_law_dist
+   binary_fraction.distributions.cos_inc_dist
+
+
+
+
+.. py:class:: power_law_dist(limits=np.array([10, 100]), pl_exp=-1.7)
+
+   Bases: :py:obj:`object`
+
+   .. py:method:: calculate_pl_coeff()
+
+
+   .. py:method:: p_x(x)
+
+
+   .. py:method:: cdf_x(x)
+
+
+   .. py:method:: inv_cdf_u(u)
+
+
+   .. py:method:: draw(rand=-1.0)
+
+
+
+.. py:class:: cos_inc_dist
+
+   Bases: :py:obj:`object`
+
+   .. py:method:: draw()
+
+
+

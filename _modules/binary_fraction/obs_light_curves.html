@@ -1,0 +1,623 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>binary_fraction.obs_light_curves &#8212; binary_fraction 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for binary_fraction.obs_light_curves</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Class to generate observed binary light curves from model light curves</span>
+<span class="c1"># ---</span>
+<span class="c1"># Abhimat Gautam</span>
+
+<span class="kn">from</span> <span class="nn">gc_photdata</span> <span class="kn">import</span> <span class="n">align_dataset</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">stats</span>
+<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">matplotlib.ticker</span> <span class="kn">import</span> <span class="n">MultipleLocator</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<div class="viewcode-block" id="calc_obs_uncs"><a class="viewcode-back" href="../../autoapi/binary_fraction/obs_light_curves/index.html#binary_fraction.obs_light_curves.calc_obs_uncs">[docs]</a><span class="k">class</span> <span class="nc">calc_obs_uncs</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for calculating uncertainties in each observation epoch</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Set up defaults</span>
+        
+        <span class="k">return</span>
+    
+<div class="viewcode-block" id="calc_obs_uncs.read_align_data"><a class="viewcode-back" href="../../autoapi/binary_fraction/obs_light_curves/index.html#binary_fraction.obs_light_curves.calc_obs_uncs.read_align_data">[docs]</a>    <span class="k">def</span> <span class="nf">read_align_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">align_kp_name</span><span class="p">,</span> <span class="n">align_h_name</span><span class="p">,</span>
+            <span class="n">align_data_location</span> <span class="o">=</span> <span class="s1">&#39;/g/ghez/abhimat/datasets/align_data_py3/&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set and read the photometry align data being used for</span>
+<span class="sd">        determining phot uncertainty to add to observation data points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">align_kp_name</span> <span class="o">=</span> <span class="n">align_kp_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">align_h_name</span> <span class="o">=</span> <span class="n">align_h_name</span>
+        
+        <span class="n">align_kp_pickle_loc</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">align_data_location</span><span class="si">}</span><span class="s1">&#39;</span> \
+                              <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;alignPickle_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">align_kp_name</span><span class="si">}</span><span class="s1">.pkl&#39;</span>
+        <span class="n">align_h_pickle_loc</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">align_data_location</span><span class="si">}</span><span class="s1">&#39;</span> \
+                              <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;alignPickle_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">align_h_name</span><span class="si">}</span><span class="s1">.pkl&#39;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">align_data_kp</span> <span class="o">=</span> <span class="n">align_dataset</span><span class="o">.</span><span class="n">align_dataset</span><span class="p">(</span><span class="n">align_kp_pickle_loc</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">align_data_h</span> <span class="o">=</span> <span class="n">align_dataset</span><span class="o">.</span><span class="n">align_dataset</span><span class="p">(</span><span class="n">align_h_pickle_loc</span><span class="p">)</span>
+        
+        <span class="k">return</span></div>
+    
+<div class="viewcode-block" id="calc_obs_uncs.construct_align_mag_arrays"><a class="viewcode-back" href="../../autoapi/binary_fraction/obs_light_curves/index.html#binary_fraction.obs_light_curves.calc_obs_uncs.construct_align_mag_arrays">[docs]</a>    <span class="k">def</span> <span class="nf">construct_align_mag_arrays</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Construct the mag arrays needed for subsequent calculation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Read in data from Kp-band align dataset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">star_names_kp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_data_kp</span><span class="o">.</span><span class="n">star_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epoch_dates_kp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_data_kp</span><span class="o">.</span><span class="n">epoch_dates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epoch_MJDs_kp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_data_kp</span><span class="o">.</span><span class="n">epoch_MJDs</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_stars_kp</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">star_names_kp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_epochs_kp</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">epoch_MJDs_kp</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">mags_kp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_data_kp</span><span class="o">.</span><span class="n">star_mags_neighCorr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag_uncs_kp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_data_kp</span><span class="o">.</span><span class="n">star_magErrors_neighCorr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag_means_kp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_data_kp</span><span class="o">.</span><span class="n">star_magMeans_neighCorr</span>
+        
+        <span class="c1"># Construct empty arrays for storing mags and mag uncertainties</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mags_array_kp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">num_stars_kp</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">num_epochs_kp</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag_uncs_array_kp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">num_stars_kp</span><span class="p">,</span>
+                                           <span class="bp">self</span><span class="o">.</span><span class="n">num_epochs_kp</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag_means_array_kp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">num_stars_kp</span><span class="p">))</span>
+        
+        <span class="c1"># Fill in mag and mag uncertainty arrays</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">star_id</span><span class="p">,</span> <span class="n">star_name</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">star_names_kp</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mags_array_kp</span><span class="p">[</span><span class="n">star_id</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mags_kp</span><span class="p">[</span><span class="n">star_name</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mag_uncs_array_kp</span><span class="p">[</span><span class="n">star_id</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mag_uncs_kp</span><span class="p">[</span><span class="n">star_name</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mag_means_array_kp</span><span class="p">[</span><span class="n">star_id</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mag_means_kp</span><span class="p">[</span><span class="n">star_name</span><span class="p">]</span>
+        
+        
+        <span class="c1"># Read in data from H-band align dataset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">star_names_h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_data_h</span><span class="o">.</span><span class="n">star_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epoch_dates_h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_data_h</span><span class="o">.</span><span class="n">epoch_dates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epoch_MJDs_h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_data_h</span><span class="o">.</span><span class="n">epoch_MJDs</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_stars_h</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">star_names_h</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_epochs_h</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">epoch_MJDs_h</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">mags_h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_data_h</span><span class="o">.</span><span class="n">star_mags_neighCorr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag_uncs_h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_data_h</span><span class="o">.</span><span class="n">star_magErrors_neighCorr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag_means_h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">align_data_h</span><span class="o">.</span><span class="n">star_magMeans_neighCorr</span>
+        
+        <span class="c1"># Construct empty arrays for storing mags and mag uncertainties</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mags_array_h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">num_stars_h</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">num_epochs_h</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag_uncs_array_h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">num_stars_h</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">num_epochs_h</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mag_means_array_h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">num_stars_h</span><span class="p">))</span>
+        
+        <span class="c1"># Fill in mag and mag uncertainty arrays</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">star_id</span><span class="p">,</span> <span class="n">star_name</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">star_names_h</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mags_array_h</span><span class="p">[</span><span class="n">star_id</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mags_h</span><span class="p">[</span><span class="n">star_name</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mag_uncs_array_h</span><span class="p">[</span><span class="n">star_id</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mag_uncs_h</span><span class="p">[</span><span class="n">star_name</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mag_means_array_h</span><span class="p">[</span><span class="n">star_id</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mag_means_h</span><span class="p">[</span><span class="n">star_name</span><span class="p">]</span></div>
+        
+        
+    
+<div class="viewcode-block" id="calc_obs_uncs.calc_epochs_mag_uncs"><a class="viewcode-back" href="../../autoapi/binary_fraction/obs_light_curves/index.html#binary_fraction.obs_light_curves.calc_obs_uncs.calc_epochs_mag_uncs">[docs]</a>    <span class="k">def</span> <span class="nf">calc_epochs_mag_uncs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the magnitude uncertainties in bins of magnitude</span>
+<span class="sd">        for each epoch in the aligns used</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Make sure output directories exist</span>
+        <span class="n">out_dir</span> <span class="o">=</span> <span class="s1">&#39;./obs_uncertainties&#39;</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">out_dir</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">out_dir</span> <span class="o">+</span> <span class="s1">&#39;/Kp&#39;</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">out_dir</span> <span class="o">+</span> <span class="s1">&#39;/Kp&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">out_dir</span> <span class="o">+</span> <span class="s1">&#39;/H&#39;</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">out_dir</span> <span class="o">+</span> <span class="s1">&#39;/H&#39;</span><span class="p">)</span>
+        
+        <span class="c1"># Suppress empty slice and invalid value warnings</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="s1">&#39;.*Mean of empty slice.*&#39;</span><span class="p">,</span> <span class="p">)</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="s1">&#39;.*invalid value encountered.*&#39;</span><span class="p">,</span> <span class="p">)</span>
+        
+        <span class="c1"># Go through the Kp align</span>
+        <span class="n">mag_min</span> <span class="o">=</span> <span class="mi">9</span>
+        <span class="n">mag_max</span> <span class="o">=</span> <span class="mi">22</span>
+        <span class="n">num_mag_bins</span> <span class="o">=</span> <span class="p">(</span><span class="n">mag_max</span> <span class="o">-</span> <span class="n">mag_min</span><span class="p">)</span> <span class="o">*</span> <span class="mi">5</span>
+        <span class="n">mag_cents_kp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">mag_min</span><span class="p">,</span> <span class="n">mag_max</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">num_mag_bins</span><span class="p">)</span>
+        
+        <span class="c1"># Go through each epoch</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">epoch_id</span><span class="p">,</span> <span class="n">epoch_mjd</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">epoch_MJDs_kp</span><span class="p">),</span>
+                                          <span class="n">total</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_epochs_kp</span><span class="p">):</span>
+            <span class="c1"># Extract mags and mag uncs in this particular epoch</span>
+            <span class="n">cur_epoch_mags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mags_array_kp</span><span class="p">[:,</span> <span class="n">epoch_id</span><span class="p">]</span>
+            <span class="n">cur_epoch_mag_uncs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mag_uncs_array_kp</span><span class="p">[:,</span> <span class="n">epoch_id</span><span class="p">]</span>
+            
+            <span class="n">cur_epoch_mag_unc_meds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_mag_bins</span><span class="p">)</span>
+            <span class="n">cur_epoch_mag_unc_mads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_mag_bins</span><span class="p">)</span>
+            <span class="n">cur_epoch_mag_stars_det</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_mag_bins</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+            <span class="n">cur_epoch_mag_stars_tot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_mag_bins</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+            
+            <span class="k">for</span> <span class="p">(</span><span class="n">bin_id</span><span class="p">,</span> <span class="n">cur_mag_cent</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mag_cents_kp</span><span class="p">):</span>
+                <span class="c1"># Find all stars within +/- 0.5 mag of the current mag_cent</span>
+                <span class="n">mag_filt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
+                               <span class="n">cur_epoch_mags</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="n">cur_mag_cent</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">),</span>
+                               <span class="n">cur_epoch_mags</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">cur_mag_cent</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">),</span>
+                           <span class="p">))</span>
+                
+                <span class="n">total_filt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">mag_means_array_kp</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="n">cur_mag_cent</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">),</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">mag_means_array_kp</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">cur_mag_cent</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">),</span>
+                             <span class="p">))</span>
+                <span class="n">total_mag_mean_stars</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mag_means_array_kp</span><span class="p">)[</span><span class="n">total_filt</span><span class="p">]</span>
+                
+                <span class="n">filt_mags</span> <span class="o">=</span> <span class="n">cur_epoch_mags</span><span class="p">[</span><span class="n">mag_filt</span><span class="p">]</span>
+                <span class="n">filt_mag_uncs</span> <span class="o">=</span> <span class="n">cur_epoch_mag_uncs</span><span class="p">[</span><span class="n">mag_filt</span><span class="p">]</span>
+                
+                <span class="c1"># Calculate stats and save out in total arrays</span>
+                <span class="n">cur_epoch_mag_unc_meds</span><span class="p">[</span><span class="n">bin_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">filt_mag_uncs</span><span class="p">)</span>
+                <span class="n">cur_epoch_mag_unc_mads</span><span class="p">[</span><span class="n">bin_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">median_abs_deviation</span><span class="p">(</span>
+                                                     <span class="n">filt_mag_uncs</span><span class="p">)</span>
+                <span class="n">cur_epoch_mag_stars_det</span><span class="p">[</span><span class="n">bin_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">filt_mags</span><span class="p">)</span>
+                <span class="n">cur_epoch_mag_stars_tot</span><span class="p">[</span><span class="n">bin_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">total_mag_mean_stars</span><span class="p">)</span>
+            
+            <span class="c1"># Create the outputs for the epoch</span>
+            
+            <span class="c1"># Create the output table for the epoch</span>
+            <span class="n">epoch_MJD_col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="n">epoch_mjd</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">mag_cents_kp</span><span class="p">))</span>
+            
+            <span class="n">epoch_table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">({</span>
+                <span class="s1">&#39;mjd&#39;</span><span class="p">:</span> <span class="n">epoch_MJD_col</span><span class="p">,</span>
+                <span class="s1">&#39;mag&#39;</span><span class="p">:</span> <span class="n">mag_cents_kp</span><span class="p">,</span>
+                <span class="s1">&#39;mag_unc_med&#39;</span><span class="p">:</span> <span class="n">cur_epoch_mag_unc_meds</span><span class="p">,</span>
+                <span class="s1">&#39;mag_unc_mad&#39;</span><span class="p">:</span> <span class="n">cur_epoch_mag_unc_mads</span><span class="p">,</span>
+                <span class="s1">&#39;stars_det_epoch&#39;</span><span class="p">:</span> <span class="n">cur_epoch_mag_stars_det</span><span class="p">,</span>
+                <span class="s1">&#39;stars_det_tot&#39;</span><span class="p">:</span> <span class="n">cur_epoch_mag_stars_tot</span><span class="p">,</span>
+            <span class="p">})</span>
+            
+            <span class="n">epoch_table</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">out_dir</span><span class="si">}</span><span class="s1">/Kp/epoch_</span><span class="si">{</span><span class="n">epoch_id</span><span class="si">}</span><span class="s1">.txt&#39;</span><span class="p">,</span>
+                              <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.fixed_width&#39;</span><span class="p">)</span>
+            
+            <span class="c1"># Create a mag, mag uncertainty plot for the epoch</span>
+            <span class="c1"># plt.style.use([&#39;tex_paper&#39;, &#39;ticks_innie&#39;])</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">([</span><span class="s1">&#39;ticks_innie&#39;</span><span class="p">])</span>
+            
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span> <span class="n">tight_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">mag_cents_kp</span><span class="p">,</span> <span class="n">cur_epoch_mag_unc_meds</span><span class="p">,</span> <span class="s1">&#39;k-&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
+            
+            <span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
+                <span class="n">mag_cents_kp</span><span class="p">,</span>
+                <span class="n">cur_epoch_mag_unc_meds</span> <span class="o">+</span> <span class="n">cur_epoch_mag_unc_mads</span><span class="p">,</span>
+                <span class="n">cur_epoch_mag_unc_meds</span> <span class="o">-</span> <span class="n">cur_epoch_mag_unc_mads</span><span class="p">,</span>
+                <span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span>
+            <span class="p">)</span>
+            
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$m_{K&#39;}$&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\sigma_{m_{K&#39;}}$&quot;</span><span class="p">)</span>
+            
+            <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">9.5</span><span class="p">,</span> <span class="mf">0.45</span><span class="p">,</span>
+                    <span class="sa">r</span><span class="s2">&quot;$K&#39;$&quot;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;: epoch </span><span class="si">{</span><span class="n">epoch_id</span><span class="si">}</span><span class="s1">, MJD = </span><span class="si">{</span><span class="n">epoch_mjd</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+                    <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span>
+                   <span class="p">)</span>
+            
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">mag_cents_kp</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">mag_cents_kp</span><span class="p">)])</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">])</span>
+            
+            <span class="n">x_majorLocator</span> <span class="o">=</span> <span class="n">MultipleLocator</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">x_minorLocator</span> <span class="o">=</span> <span class="n">MultipleLocator</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">x_majorLocator</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">x_minorLocator</span><span class="p">)</span>
+            
+            <span class="n">y_majorLocator</span> <span class="o">=</span> <span class="n">MultipleLocator</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+            <span class="n">y_minorLocator</span> <span class="o">=</span> <span class="n">MultipleLocator</span><span class="p">(</span><span class="mf">0.02</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">y_majorLocator</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">y_minorLocator</span><span class="p">)</span>
+            
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">out_dir</span><span class="si">}</span><span class="s1">/Kp/epoch_</span><span class="si">{</span><span class="n">epoch_id</span><span class="si">}</span><span class="s1">.pdf&#39;</span><span class="p">)</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">out_dir</span><span class="si">}</span><span class="s1">/Kp/epoch_</span><span class="si">{</span><span class="n">epoch_id</span><span class="si">}</span><span class="s1">.png&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+            
+        
+        <span class="c1"># Go through the H align</span>
+        <span class="n">mag_min</span> <span class="o">=</span> <span class="mi">11</span>
+        <span class="n">mag_max</span> <span class="o">=</span> <span class="mi">24</span>
+        <span class="n">num_mag_bins</span> <span class="o">=</span> <span class="p">(</span><span class="n">mag_max</span> <span class="o">-</span> <span class="n">mag_min</span><span class="p">)</span> <span class="o">*</span> <span class="mi">5</span>
+        <span class="n">mag_cents_h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">mag_min</span><span class="p">,</span> <span class="n">mag_max</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">num_mag_bins</span><span class="p">)</span>
+        
+        <span class="c1"># Go through each epoch</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">epoch_id</span><span class="p">,</span> <span class="n">epoch_mjd</span><span class="p">)</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">epoch_MJDs_h</span><span class="p">),</span>
+                                          <span class="n">total</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_epochs_h</span><span class="p">):</span>
+            <span class="c1"># Extract mags and mag uncs in this particular epoch</span>
+            <span class="n">cur_epoch_mags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mags_array_h</span><span class="p">[:,</span> <span class="n">epoch_id</span><span class="p">]</span>
+            <span class="n">cur_epoch_mag_uncs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mag_uncs_array_h</span><span class="p">[:,</span> <span class="n">epoch_id</span><span class="p">]</span>
+            
+            <span class="n">cur_epoch_mag_unc_meds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_mag_bins</span><span class="p">)</span>
+            <span class="n">cur_epoch_mag_unc_mads</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_mag_bins</span><span class="p">)</span>
+            <span class="n">cur_epoch_mag_stars_det</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_mag_bins</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+            <span class="n">cur_epoch_mag_stars_tot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_mag_bins</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+            
+            <span class="k">for</span> <span class="p">(</span><span class="n">bin_id</span><span class="p">,</span> <span class="n">cur_mag_cent</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mag_cents_h</span><span class="p">):</span>
+                <span class="c1"># Find all stars within +/- 0.5 mag of the current mag_cent</span>
+                <span class="n">mag_filt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
+                               <span class="n">cur_epoch_mags</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="n">cur_mag_cent</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">),</span>
+                               <span class="n">cur_epoch_mags</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">cur_mag_cent</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">),</span>
+                           <span class="p">))</span>
+                
+                <span class="n">total_filt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">mag_means_array_h</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="n">cur_mag_cent</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">),</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">mag_means_array_h</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="n">cur_mag_cent</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">),</span>
+                             <span class="p">))</span>
+                <span class="n">total_mag_mean_stars</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mag_means_array_h</span><span class="p">)[</span><span class="n">total_filt</span><span class="p">]</span>
+                
+                <span class="n">filt_mags</span> <span class="o">=</span> <span class="n">cur_epoch_mags</span><span class="p">[</span><span class="n">mag_filt</span><span class="p">]</span>
+                <span class="n">filt_mag_uncs</span> <span class="o">=</span> <span class="n">cur_epoch_mag_uncs</span><span class="p">[</span><span class="n">mag_filt</span><span class="p">]</span>
+                
+                <span class="c1"># Calculate stats and save out in total arrays</span>
+                <span class="n">cur_epoch_mag_unc_meds</span><span class="p">[</span><span class="n">bin_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">filt_mag_uncs</span><span class="p">)</span>
+                <span class="n">cur_epoch_mag_unc_mads</span><span class="p">[</span><span class="n">bin_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">median_abs_deviation</span><span class="p">(</span>
+                                                     <span class="n">filt_mag_uncs</span><span class="p">)</span>
+                <span class="n">cur_epoch_mag_stars_det</span><span class="p">[</span><span class="n">bin_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">filt_mags</span><span class="p">)</span>
+                <span class="n">cur_epoch_mag_stars_tot</span><span class="p">[</span><span class="n">bin_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">total_mag_mean_stars</span><span class="p">)</span>
+            
+            <span class="c1"># Create the outputs for the epoch</span>
+            
+            <span class="c1"># Create the output table for the epoch</span>
+            <span class="n">epoch_MJD_col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">([</span><span class="n">epoch_mjd</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">mag_cents_h</span><span class="p">))</span>
+            
+            <span class="n">epoch_table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">({</span>
+                <span class="s1">&#39;mjd&#39;</span><span class="p">:</span> <span class="n">epoch_MJD_col</span><span class="p">,</span>
+                <span class="s1">&#39;mag&#39;</span><span class="p">:</span> <span class="n">mag_cents_h</span><span class="p">,</span>
+                <span class="s1">&#39;mag_unc_med&#39;</span><span class="p">:</span> <span class="n">cur_epoch_mag_unc_meds</span><span class="p">,</span>
+                <span class="s1">&#39;mag_unc_mad&#39;</span><span class="p">:</span> <span class="n">cur_epoch_mag_unc_mads</span><span class="p">,</span>
+                <span class="s1">&#39;stars_det_epoch&#39;</span><span class="p">:</span> <span class="n">cur_epoch_mag_stars_det</span><span class="p">,</span>
+                <span class="s1">&#39;stars_det_tot&#39;</span><span class="p">:</span> <span class="n">cur_epoch_mag_stars_tot</span><span class="p">,</span>
+            <span class="p">})</span>
+            
+            <span class="n">epoch_table</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">out_dir</span><span class="si">}</span><span class="s1">/H/epoch_</span><span class="si">{</span><span class="n">epoch_id</span><span class="si">}</span><span class="s1">.txt&#39;</span><span class="p">,</span>
+                              <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.fixed_width&#39;</span><span class="p">)</span>
+            
+            <span class="c1"># Create a mag, mag uncertainty plot for the epoch</span>
+            <span class="c1"># plt.style.use([&#39;tex_paper&#39;, &#39;ticks_innie&#39;])</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">([</span><span class="s1">&#39;ticks_innie&#39;</span><span class="p">])</span>
+            
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span> <span class="n">tight_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">mag_cents_h</span><span class="p">,</span> <span class="n">cur_epoch_mag_unc_meds</span><span class="p">,</span> <span class="s1">&#39;k-&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
+            
+            <span class="n">ax</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
+                <span class="n">mag_cents_h</span><span class="p">,</span>
+                <span class="n">cur_epoch_mag_unc_meds</span> <span class="o">+</span> <span class="n">cur_epoch_mag_unc_mads</span><span class="p">,</span>
+                <span class="n">cur_epoch_mag_unc_meds</span> <span class="o">-</span> <span class="n">cur_epoch_mag_unc_mads</span><span class="p">,</span>
+                <span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span>
+            <span class="p">)</span>
+            
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$m_</span><span class="si">{H}</span><span class="s2">$&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\sigma_{m_</span><span class="si">{H}</span><span class="s2">}$&quot;</span><span class="p">)</span>
+            
+            <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">11.5</span><span class="p">,</span> <span class="mf">0.45</span><span class="p">,</span>
+                    <span class="sa">r</span><span class="s2">&quot;$H$&quot;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;: epoch </span><span class="si">{</span><span class="n">epoch_id</span><span class="si">}</span><span class="s1">, MJD = </span><span class="si">{</span><span class="n">epoch_mjd</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
+                    <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span>
+                   <span class="p">)</span>
+            
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">mag_cents_h</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">mag_cents_h</span><span class="p">)])</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">])</span>
+            
+            <span class="n">x_majorLocator</span> <span class="o">=</span> <span class="n">MultipleLocator</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">x_minorLocator</span> <span class="o">=</span> <span class="n">MultipleLocator</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">x_majorLocator</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">x_minorLocator</span><span class="p">)</span>
+            
+            <span class="n">y_majorLocator</span> <span class="o">=</span> <span class="n">MultipleLocator</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+            <span class="n">y_minorLocator</span> <span class="o">=</span> <span class="n">MultipleLocator</span><span class="p">(</span><span class="mf">0.02</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">y_majorLocator</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_minor_locator</span><span class="p">(</span><span class="n">y_minorLocator</span><span class="p">)</span>
+            
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">out_dir</span><span class="si">}</span><span class="s1">/H/epoch_</span><span class="si">{</span><span class="n">epoch_id</span><span class="si">}</span><span class="s1">.pdf&#39;</span><span class="p">)</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">out_dir</span><span class="si">}</span><span class="s1">/H/epoch_</span><span class="si">{</span><span class="n">epoch_id</span><span class="si">}</span><span class="s1">.png&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span></div></div>
+        
+
+<div class="viewcode-block" id="add_obs_uncs"><a class="viewcode-back" href="../../autoapi/binary_fraction/obs_light_curves/index.html#binary_fraction.obs_light_curves.add_obs_uncs">[docs]</a><span class="k">class</span> <span class="nc">add_obs_uncs</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class for adding obs uncertainties from each observation epoch</span>
+<span class="sd">    to binary star model mags</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Set up defaults</span>
+        
+        <span class="k">return</span>
+    
+<div class="viewcode-block" id="add_obs_uncs.read_epoch_uncs"><a class="viewcode-back" href="../../autoapi/binary_fraction/obs_light_curves/index.html#binary_fraction.obs_light_curves.add_obs_uncs.read_epoch_uncs">[docs]</a>    <span class="k">def</span> <span class="nf">read_epoch_uncs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">num_epochs_kp</span><span class="p">,</span> <span class="n">num_epochs_h</span><span class="p">,</span>
+            <span class="n">uncs_dir</span> <span class="o">=</span> <span class="s1">&#39;./obs_uncertainties/&#39;</span><span class="p">,</span>
+        <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read in and store mag uncertainties for each epoch</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">epoch_unc_tables_kp</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">epoch_unc_tables_h</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="c1"># Read in each epoch&#39;s uncertainties table</span>
+        <span class="k">for</span> <span class="n">cur_epoch_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_epochs_kp</span><span class="p">):</span>
+            <span class="n">cur_epoch_table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">uncs_dir</span><span class="si">}</span><span class="s1">/Kp/epoch_</span><span class="si">{</span><span class="n">cur_epoch_index</span><span class="si">}</span><span class="s1">.txt&#39;</span><span class="p">,</span>
+                <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.fixed_width&#39;</span><span class="p">)</span>
+            
+            <span class="n">epoch_unc_tables_kp</span><span class="p">[</span><span class="n">cur_epoch_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">cur_epoch_table</span>
+        
+        <span class="k">for</span> <span class="n">cur_epoch_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_epochs_h</span><span class="p">):</span>
+            <span class="n">cur_epoch_table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">uncs_dir</span><span class="si">}</span><span class="s1">/H/epoch_</span><span class="si">{</span><span class="n">cur_epoch_index</span><span class="si">}</span><span class="s1">.txt&#39;</span><span class="p">,</span>
+                <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.fixed_width&#39;</span><span class="p">)</span>
+            
+            <span class="n">epoch_unc_tables_h</span><span class="p">[</span><span class="n">cur_epoch_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">cur_epoch_table</span>
+        
+        <span class="c1"># Save out variables into object variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epoch_unc_tables_kp</span> <span class="o">=</span> <span class="n">epoch_unc_tables_kp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epoch_unc_tables_h</span> <span class="o">=</span> <span class="n">epoch_unc_tables_h</span>
+        
+        <span class="k">return</span></div>
+    
+<div class="viewcode-block" id="add_obs_uncs.apply_mag_uncs"><a class="viewcode-back" href="../../autoapi/binary_fraction/obs_light_curves/index.html#binary_fraction.obs_light_curves.add_obs_uncs.apply_mag_uncs">[docs]</a>    <span class="k">def</span> <span class="nf">apply_mag_uncs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">model_number</span><span class="p">,</span>
+            <span class="n">model_lcs_dir</span> <span class="o">=</span> <span class="s1">&#39;./mock_binaries/model_light_curves/&#39;</span><span class="p">,</span>
+            <span class="n">model_obs_lcs_dir</span> <span class="o">=</span> <span class="s1">&#39;./mock_binaries/model_obs_light_curves/&#39;</span><span class="p">,</span>
+        <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply obs uncertainties to model magnitudes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c1"># Work on Kp epochs</span>
+        <span class="c1"># Read in model magnitudes</span>
+        <span class="n">model_mags_kp_table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">model_lcs_dir</span><span class="si">}</span><span class="s1">/binary_</span><span class="si">{</span><span class="n">model_number</span><span class="si">}</span><span class="s1">_mags_Kp.txt&#39;</span><span class="p">,</span>
+            <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.fixed_width&#39;</span><span class="p">)</span>
+        
+        <span class="n">num_epochs_kp</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_mags_kp_table</span><span class="p">)</span>
+        
+        <span class="n">model_mags_kp</span> <span class="o">=</span> <span class="n">model_mags_kp_table</span><span class="p">[</span><span class="s1">&#39;mags_Kp&#39;</span><span class="p">]</span>
+        <span class="n">model_obs_mags_kp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_epochs_kp</span><span class="p">)</span>
+        <span class="n">model_obs_mag_uncs_kp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_epochs_kp</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">num_epochs_kp</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># Step through each observation epoch</span>
+        <span class="k">for</span> <span class="n">cur_epoch_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_epochs_kp</span><span class="p">):</span>
+            <span class="n">cur_epoch_model_mag</span> <span class="o">=</span> <span class="n">model_mags_kp</span><span class="p">[</span><span class="n">cur_epoch_index</span><span class="p">]</span>
+            <span class="n">cur_epoch_unc_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epoch_unc_tables_kp</span><span class="p">[</span><span class="n">cur_epoch_index</span><span class="p">]</span>
+            
+            <span class="c1"># Apply filter for mags where values are defined</span>
+            <span class="n">finite_filter</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">cur_epoch_unc_table</span><span class="p">[</span><span class="s1">&#39;mag_unc_med&#39;</span><span class="p">])</span>
+            <span class="p">)</span>
+            <span class="n">cur_epoch_unc_table</span> <span class="o">=</span> <span class="n">cur_epoch_unc_table</span><span class="p">[</span><span class="n">finite_filter</span><span class="p">]</span>
+            
+            
+            <span class="n">interp_unc_med</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">cur_epoch_model_mag</span><span class="p">,</span>
+                                       <span class="n">cur_epoch_unc_table</span><span class="p">[</span><span class="s1">&#39;mag&#39;</span><span class="p">],</span>
+                                       <span class="n">cur_epoch_unc_table</span><span class="p">[</span><span class="s1">&#39;mag_unc_med&#39;</span><span class="p">],</span>
+                                       <span class="n">right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+                                      <span class="p">)</span>
+            
+            <span class="n">interp_unc_mad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">cur_epoch_model_mag</span><span class="p">,</span>
+                                       <span class="n">cur_epoch_unc_table</span><span class="p">[</span><span class="s1">&#39;mag&#39;</span><span class="p">],</span>
+                                       <span class="n">cur_epoch_unc_table</span><span class="p">[</span><span class="s1">&#39;mag_unc_mad&#39;</span><span class="p">],</span>
+                                       <span class="n">right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+                                      <span class="p">)</span>
+            
+            <span class="c1"># Pick a mag uncertainty            </span>
+            <span class="n">cur_epoch_mag_unc</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="c1"># While loop to make sure negative unc doesn&#39;t get picked</span>
+            <span class="k">while</span> <span class="n">cur_epoch_mag_unc</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">cur_epoch_mag_unc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
+                                        <span class="n">loc</span><span class="o">=</span><span class="n">interp_unc_med</span><span class="p">,</span>
+                                        <span class="n">scale</span><span class="o">=</span><span class="n">interp_unc_mad</span><span class="p">)</span>
+            
+            <span class="c1"># Pick an observed mag based on the mag uncertainty</span>
+            <span class="n">cur_epoch_model_obs_mag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
+                                          <span class="n">loc</span><span class="o">=</span><span class="n">cur_epoch_model_mag</span><span class="p">,</span>
+                                          <span class="n">scale</span><span class="o">=</span><span class="n">cur_epoch_mag_unc</span><span class="p">)</span>
+            
+            <span class="c1"># Save out drawn values</span>
+            <span class="n">model_obs_mags_kp</span><span class="p">[</span><span class="n">cur_epoch_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">cur_epoch_model_obs_mag</span>
+            <span class="n">model_obs_mag_uncs_kp</span><span class="p">[</span><span class="n">cur_epoch_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">cur_epoch_mag_unc</span>
+        
+        <span class="c1"># Construct and output a new table for the observed model mags</span>
+        <span class="n">model_obs_mags_kp_table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">({</span>
+            <span class="s1">&#39;MJD&#39;</span><span class="p">:</span> <span class="n">model_mags_kp_table</span><span class="p">[</span><span class="s1">&#39;MJD&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;mags_Kp&#39;</span><span class="p">:</span> <span class="n">model_obs_mags_kp</span><span class="p">,</span>
+            <span class="s1">&#39;mag_uncs_Kp&#39;</span><span class="p">:</span> <span class="n">model_obs_mag_uncs_kp</span><span class="p">,</span>
+        <span class="p">})</span>
+        
+        <span class="n">model_obs_mags_kp_table</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">model_obs_lcs_dir</span><span class="si">}</span><span class="s1">/binary_</span><span class="si">{</span><span class="n">model_number</span><span class="si">}</span><span class="s1">_mags_Kp.txt&#39;</span><span class="p">,</span>
+            <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.fixed_width&#39;</span><span class="p">)</span>
+        
+        
+        <span class="c1"># Work on H epochs</span>
+        <span class="c1"># Read in model magnitudes</span>
+        <span class="n">model_mags_h_table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">model_lcs_dir</span><span class="si">}</span><span class="s1">/binary_</span><span class="si">{</span><span class="n">model_number</span><span class="si">}</span><span class="s1">_mags_H.txt&#39;</span><span class="p">,</span>
+            <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.fixed_width&#39;</span><span class="p">)</span>
+        
+        <span class="n">num_epochs_h</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_mags_h_table</span><span class="p">)</span>
+        
+        <span class="n">model_mags_h</span> <span class="o">=</span> <span class="n">model_mags_h_table</span><span class="p">[</span><span class="s1">&#39;mags_H&#39;</span><span class="p">]</span>
+        <span class="n">model_obs_mags_h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_epochs_h</span><span class="p">)</span>
+        <span class="n">model_obs_mag_uncs_h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">num_epochs_h</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">num_epochs_h</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># Step through each observation epoch</span>
+        <span class="k">for</span> <span class="n">cur_epoch_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_epochs_h</span><span class="p">):</span>
+            <span class="n">cur_epoch_model_mag</span> <span class="o">=</span> <span class="n">model_mags_h</span><span class="p">[</span><span class="n">cur_epoch_index</span><span class="p">]</span>
+            <span class="n">cur_epoch_unc_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epoch_unc_tables_h</span><span class="p">[</span><span class="n">cur_epoch_index</span><span class="p">]</span>
+            
+            <span class="c1"># Apply filter for mags where values are defined</span>
+            <span class="n">finite_filter</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">cur_epoch_unc_table</span><span class="p">[</span><span class="s1">&#39;mag_unc_med&#39;</span><span class="p">])</span>
+            <span class="p">)</span>
+            <span class="n">cur_epoch_unc_table</span> <span class="o">=</span> <span class="n">cur_epoch_unc_table</span><span class="p">[</span><span class="n">finite_filter</span><span class="p">]</span>
+            
+            
+            <span class="n">interp_unc_med</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">cur_epoch_model_mag</span><span class="p">,</span>
+                                       <span class="n">cur_epoch_unc_table</span><span class="p">[</span><span class="s1">&#39;mag&#39;</span><span class="p">],</span>
+                                       <span class="n">cur_epoch_unc_table</span><span class="p">[</span><span class="s1">&#39;mag_unc_med&#39;</span><span class="p">],</span>
+                                       <span class="n">right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+                                      <span class="p">)</span>
+            
+            <span class="n">interp_unc_mad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">cur_epoch_model_mag</span><span class="p">,</span>
+                                       <span class="n">cur_epoch_unc_table</span><span class="p">[</span><span class="s1">&#39;mag&#39;</span><span class="p">],</span>
+                                       <span class="n">cur_epoch_unc_table</span><span class="p">[</span><span class="s1">&#39;mag_unc_mad&#39;</span><span class="p">],</span>
+                                       <span class="n">right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+                                      <span class="p">)</span>
+            
+            <span class="c1"># Pick a mag uncertainty            </span>
+            <span class="n">cur_epoch_mag_unc</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="c1"># While loop to make sure negative unc doesn&#39;t get picked</span>
+            <span class="k">while</span> <span class="n">cur_epoch_mag_unc</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">cur_epoch_mag_unc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
+                                        <span class="n">loc</span><span class="o">=</span><span class="n">interp_unc_med</span><span class="p">,</span>
+                                        <span class="n">scale</span><span class="o">=</span><span class="n">interp_unc_mad</span><span class="p">)</span>
+            
+            <span class="c1"># Pick an observed mag based on the mag uncertainty</span>
+            <span class="n">cur_epoch_model_obs_mag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
+                                          <span class="n">loc</span><span class="o">=</span><span class="n">cur_epoch_model_mag</span><span class="p">,</span>
+                                          <span class="n">scale</span><span class="o">=</span><span class="n">cur_epoch_mag_unc</span><span class="p">)</span>
+            
+            <span class="c1"># Save out drawn values</span>
+            <span class="n">model_obs_mags_h</span><span class="p">[</span><span class="n">cur_epoch_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">cur_epoch_model_obs_mag</span>
+            <span class="n">model_obs_mag_uncs_h</span><span class="p">[</span><span class="n">cur_epoch_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">cur_epoch_mag_unc</span>
+        
+        <span class="c1"># Construct and output a new table for the observed model mags</span>
+        <span class="n">model_obs_mags_h_table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">({</span>
+            <span class="s1">&#39;MJD&#39;</span><span class="p">:</span> <span class="n">model_mags_h_table</span><span class="p">[</span><span class="s1">&#39;MJD&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;mags_H&#39;</span><span class="p">:</span> <span class="n">model_obs_mags_h</span><span class="p">,</span>
+            <span class="s1">&#39;mag_uncs_H&#39;</span><span class="p">:</span> <span class="n">model_obs_mag_uncs_h</span><span class="p">,</span>
+        <span class="p">})</span>
+        
+        <span class="n">model_obs_mags_h_table</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">model_obs_lcs_dir</span><span class="si">}</span><span class="s1">/binary_</span><span class="si">{</span><span class="n">model_number</span><span class="si">}</span><span class="s1">_mags_H.txt&#39;</span><span class="p">,</span>
+            <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.fixed_width&#39;</span><span class="p">)</span>
+        
+        <span class="k">return</span></div>
+    
+<div class="viewcode-block" id="add_obs_uncs.apply_mag_uncs_range"><a class="viewcode-back" href="../../autoapi/binary_fraction/obs_light_curves/index.html#binary_fraction.obs_light_curves.add_obs_uncs.apply_mag_uncs_range">[docs]</a>    <span class="k">def</span> <span class="nf">apply_mag_uncs_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">model_number_range</span><span class="p">,</span>
+            <span class="n">model_lcs_dir</span> <span class="o">=</span> <span class="s1">&#39;./mock_binaries/model_light_curves/&#39;</span><span class="p">,</span>
+            <span class="n">model_obs_lcs_dir</span> <span class="o">=</span> <span class="s1">&#39;./mock_binaries/model_obs_light_curves/&#39;</span><span class="p">,</span>
+        <span class="p">):</span>
+        
+        <span class="c1"># Make sure output directory exists</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">model_obs_lcs_dir</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">model_obs_lcs_dir</span><span class="p">)</span>
+        
+        <span class="c1"># Run function on range</span>
+        <span class="k">for</span> <span class="n">model_number</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">model_number_range</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">apply_mag_uncs</span><span class="p">(</span>
+                <span class="n">model_number</span><span class="p">,</span>
+                <span class="n">model_lcs_dir</span> <span class="o">=</span> <span class="n">model_lcs_dir</span><span class="p">,</span>
+                <span class="n">model_obs_lcs_dir</span> <span class="o">=</span> <span class="n">model_obs_lcs_dir</span><span class="p">,</span>
+            <span class="p">)</span>
+        
+        <span class="k">return</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">binary_fraction</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../autoapi/index.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Abhimat K. Gautam.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

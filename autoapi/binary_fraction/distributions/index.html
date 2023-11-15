@@ -1,0 +1,184 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>binary_fraction.distributions &#8212; binary_fraction 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="binary_fraction.imf" href="../imf/index.html" />
+    <link rel="prev" title="binary_fraction.binary_parameters" href="../binary_parameters/index.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-binary_fraction.distributions">
+<span id="binary-fraction-distributions"></span><h1><a class="reference internal" href="#module-binary_fraction.distributions" title="binary_fraction.distributions"><code class="xref py py-mod docutils literal notranslate"><span class="pre">binary_fraction.distributions</span></code></a><a class="headerlink" href="#module-binary_fraction.distributions" title="Permalink to this heading">¶</a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading">¶</a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this heading">¶</a></h3>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#binary_fraction.distributions.power_law_dist" title="binary_fraction.distributions.power_law_dist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">power_law_dist</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#binary_fraction.distributions.cos_inc_dist" title="binary_fraction.distributions.cos_inc_dist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cos_inc_dist</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="binary_fraction.distributions.power_law_dist">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">binary_fraction.distributions.</span></span><span class="sig-name descname"><span class="pre">power_law_dist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">limits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">np.array([10,</span> <span class="pre">100])</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_exp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.7</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/distributions.html#power_law_dist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.distributions.power_law_dist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.distributions.power_law_dist.calculate_pl_coeff">
+<span class="sig-name descname"><span class="pre">calculate_pl_coeff</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/distributions.html#power_law_dist.calculate_pl_coeff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.distributions.power_law_dist.calculate_pl_coeff" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.distributions.power_law_dist.p_x">
+<span class="sig-name descname"><span class="pre">p_x</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/distributions.html#power_law_dist.p_x"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.distributions.power_law_dist.p_x" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.distributions.power_law_dist.cdf_x">
+<span class="sig-name descname"><span class="pre">cdf_x</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/distributions.html#power_law_dist.cdf_x"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.distributions.power_law_dist.cdf_x" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.distributions.power_law_dist.inv_cdf_u">
+<span class="sig-name descname"><span class="pre">inv_cdf_u</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/distributions.html#power_law_dist.inv_cdf_u"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.distributions.power_law_dist.inv_cdf_u" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.distributions.power_law_dist.draw">
+<span class="sig-name descname"><span class="pre">draw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/distributions.html#power_law_dist.draw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.distributions.power_law_dist.draw" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="binary_fraction.distributions.cos_inc_dist">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">binary_fraction.distributions.</span></span><span class="sig-name descname"><span class="pre">cos_inc_dist</span></span><a class="reference internal" href="../../../_modules/binary_fraction/distributions.html#cos_inc_dist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.distributions.cos_inc_dist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="binary_fraction.distributions.cos_inc_dist.draw">
+<span class="sig-name descname"><span class="pre">draw</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/binary_fraction/distributions.html#cos_inc_dist.draw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#binary_fraction.distributions.cos_inc_dist.draw" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">binary_fraction</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">binary_fraction</span></code></a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="../index.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">API Reference</a><ul>
+  <li><a href="../index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">binary_fraction</span></code></a><ul>
+      <li>Previous: <a href="../binary_parameters/index.html" title="previous chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">binary_fraction.binary_parameters</span></code></a></li>
+      <li>Next: <a href="../imf/index.html" title="next chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">binary_fraction.imf</span></code></a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Abhimat K. Gautam.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="../../../_sources/autoapi/binary_fraction/distributions/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

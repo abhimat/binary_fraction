@@ -1,0 +1,326 @@
+:py:mod:`binary_fraction.star_add_binary_var`
+=============================================
+
+.. py:module:: binary_fraction.star_add_binary_var
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   binary_fraction.star_add_binary_var.star_add_binary_var
+
+
+
+
+.. py:class:: star_add_binary_var
+
+   Bases: :py:obj:`object`
+
+   
+   Object for each star to add mock binary light curves to observed data
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   ..
+       !! processed by numpydoc !!
+   .. py:method:: set_model_lcs_dir(model_lcs_dir)
+
+      
+      Set model_lcs_dir variable for class, where model light curves for
+      mock binaries are located
+
+
+      :Parameters:
+
+          **model_lcs_dir** : str, default: './mock_binaries/model_light_curves/'
+              Directory where the mock binary model light curves are stored
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: load_model_lc_params_table(table_file_path='./binary_model_lc_params.h5')
+
+      
+      Load the binary model light curve parameters table
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: load_model_sb_params_table(table_file_path='./stellar_binary_params.h5')
+
+      
+      Load the binary model light curve parameters table
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: read_align_data(align_kp_name, align_h_name, align_data_location='/g/ghez/abhimat/datasets/align_data_py3/')
+
+      
+      Set and read the photometry align data being used for
+      determining phot uncertainty to add to observation data points
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: read_epoch_uncs(uncs_dir='./obs_uncertainties/')
+
+      
+      Read in and store mag uncertainties for each epoch
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: draw_bin_mags(model_index, phase_shift, print_diagnostics=False)
+
+      
+      For a model binary of index {model_index}, sample the model light curve
+      at this experiment's observation dates.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: star_lc_add_binary_var(star, num_lcs_generate=1)
+
+      
+      For a given star, add mock binary var light curves
+
+
+      :Parameters:
+
+          **star** : str
+              Name of the star, from the Kp align, that the mock binary light
+              curves are being added to
+
+          **num_lcs_generate** : int, default: 1
+              Number of mock light curves to generate for the target star, with
+              mock binary light curves added
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: create_star_binary_var_table(star, num_lcs_generate=1, star_bin_var_out_dir='./star_bin_var/', print_diagnostics=False)
+
+      
+      Function to create a table of mock light curves for the target star
+
+
+      :Parameters:
+
+          **star** : str
+              Name of the star, from the Kp align, that the mock binary light
+              curves are being added to
+
+          **num_lcs_generate** : int, default: 1
+              Number of mock light curves to generate for the target star, with
+              mock binary light curves added
+
+          **star_bin_var_out_dir** : str, default: './star_bin_var/'
+              Directory where the output tables live for each star,
+              with mock binary light curves injected
+
+          **print_diagnostics** : bool, default: False
+              Specify if to print diagnostics during run
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+   .. py:method:: plot_star_binary_var_table(star, star_bin_var_out_dir='../star_bin_var/', plot_out_dir='./', plot_detections=False, detections_table='../bin_detectability_likely/bin_detect_sampall.h5', print_diagnostics=False, plot_sbv_indexes=None, plot_n_rows=10, plot_n_cols=5, plot_figsize=(20, 10), main_plot_ms=15.0, sbv_plot_ms=2.0, plt_style=['ticks_outtie', 'tex_paper'])
+
+      
+      Function to plot light curves injected with binarity for the target star
+
+
+      :Parameters:
+
+          **star** : str
+              Name of the star, from the Kp align, that the mock binary light
+              curves are being added to
+
+          **star_bin_var_out_dir** : str, default: './star_bin_var/'
+              Directory where the output tables live for each star,
+              with mock binary light curves injected
+
+          **plot_out_dir** : str, default: './'
+              Directory of the output plots
+
+          **plot_detections** : bool, default: False
+              Specify if to indicate detections on the plots
+
+          **detections_table** : str, default: '../bin_detectability_likely/bin_detect_sampall.h5'
+              Table where detections of the injected SBVs are stored
+
+          **print_diagnostics** : bool, default: False
+              Specify if to print diagnostics during run
+
+          **plot_sbv_indexes** : [int], default: None
+              List of SBV indexes to plot. If not specified
+              (plot_sbv_indexes = None), all SBV indexes will be plotted
+
+          **plot_n_rows** : int, default: 10
+              Number of rows for the SBV injected plots
+
+          **plot_n_cols** : int, default: 5
+              Number of columns for the SBV injected plots
+
+          **plot_figsize** : (float, float), default: (20, 10)
+              Tuple of figure size
+
+          **main_plot_ms** : float, default: 15.0
+              Marker size for the main observation light curve panels
+
+          **sbv_plot_ms** : float, default: 15.0
+              Marker size for the SBV light curve panels
+
+          **plt_style** : [str], default: ['ticks_outtie', 'tex_paper']
+              Matplotlib style files to use when drawing the plot
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      ..
+          !! processed by numpydoc !!
+
+

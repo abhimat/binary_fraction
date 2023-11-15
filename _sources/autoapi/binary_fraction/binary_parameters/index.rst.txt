@@ -1,0 +1,71 @@
+:py:mod:`binary_fraction.binary_parameters`
+===========================================
+
+.. py:module:: binary_fraction.binary_parameters
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   binary_fraction.binary_parameters.binary_population
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   binary_fraction.binary_parameters.generate_binary_population_params
+
+
+
+.. py:class:: binary_population
+
+   Bases: :py:obj:`object`
+
+   .. py:method:: make_imf(mass_limits=np.array([10, 100]), alpha=1.7)
+
+
+   .. py:method:: make_period_dist(period_limits=np.array([1.0, 10.0**3.5]), pl_exp=-0.55)
+
+
+   .. py:method:: make_q_dist(q_limits=np.array([0.1, 1.0]), pl_exp=-0.1)
+
+
+   .. py:method:: make_ecc_dist(ecc_limits=np.array([0.0, 1.0]), pl_exp=-0.45)
+
+
+   .. py:method:: make_inc_dist()
+
+
+   .. py:method:: generate_binary_params(print_diagnostics=False)
+
+
+   .. py:method:: draw_mass_imf()
+
+
+   .. py:method:: draw_period()
+
+
+   .. py:method:: draw_t0_shift(binary_period)
+
+
+   .. py:method:: draw_q()
+
+
+   .. py:method:: draw_ecc()
+
+
+   .. py:method:: draw_inc()
+
+
+
+.. py:function:: generate_binary_population_params(binary_population, num_binaries, out_dir='./mock_binaries')
+
+

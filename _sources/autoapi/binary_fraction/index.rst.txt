@@ -1,0 +1,25 @@
+:py:mod:`binary_fraction`
+=========================
+
+.. py:module:: binary_fraction
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   bin_detectability/index.rst
+   binary_light_curves/index.rst
+   binary_parameters/index.rst
+   distributions/index.rst
+   imf/index.rst
+   mcmc_fit_trend_sinusoid/index.rst
+   model_lc_params_calc/index.rst
+   obs_light_curves/index.rst
+   obs_params_calc/index.rst
+   star_add_binary_var/index.rst
+   stellar_binary_params_calc/index.rst
+
+
