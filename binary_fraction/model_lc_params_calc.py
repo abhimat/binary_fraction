@@ -135,7 +135,8 @@ class model_lc_params_calc(object):
                         params_from_bin_index,
                         binary_indexes, self,
                         pm_pbar=True, pm_parallel=parallelize,
-                        pm_chunksize=10,
+                        pm_processes=16,
+                        pm_chunksize=100,
                      ))
         
         # Empty arrays to store stellar parameters
