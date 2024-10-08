@@ -8,7 +8,9 @@ import os
 import numpy as np
 from binary_fraction import imf
 from astropy.table import Table
-from phitter import isoc_interp, lc_calc
+from phitter import observables, filters
+from phitter.params import star_params, binary_params, isoc_interp_params
+from phitter.calc import model_obs_calc, phot_adj_calc
 from phoebe import u
 from phoebe import c as const
 import parmap
@@ -30,6 +32,10 @@ def binary_light_curve_from_binary_row(
         out_dir=out_dir,
     )
 
+# Default filters
+kp_filt = filters.nirc2_kp_filt()
+h_filt = filters.nirc2_h_filt()
+
 # Class for generating light curves in a binary population
 class binary_pop_light_curves(object):
     def  __init__(self):
@@ -39,45 +45,80 @@ class binary_pop_light_curves(object):
         
         return
     
-    def make_pop_isochrone(self,
-                           isoc_age=4.0e6, isoc_ext_Ks=2.54,
-                           isoc_dist=7.971e3, isoc_phase=None,
-                           isoc_met=0.0,
-                           isoc_atm_func = 'merged'):
+    def make_pop_isochrone(
+            self,
+            isoc_age=4.0e6, isoc_ext_Ks=2.54,
+            isoc_dist=7.971e3, isoc_phase=None,
+            isoc_met=0.0,
+            isoc_atm_func = 'merged',
+            isoc_filts_list=[
+                kp_filt, h_filt,
+            ],
+        ):
         # Store out isochrone parameters into object
         self.isoc_age=isoc_age,
         self.isoc_ext=isoc_ext_Ks,
         self.isoc_dist=isoc_dist,
         self.isoc_phase=isoc_phase,
         self.isoc_met=isoc_met
+        self.isoc_filts_list=isoc_filts_list
         
         # Generate isoc_interp object
-        self.pop_isochrone = isoc_interp.isochrone_mist(age=isoc_age,
-                                                        ext=isoc_ext_Ks,
-                                                        dist=isoc_dist,
-                                                        phase=isoc_phase,
-                                                        met=isoc_met,
-                                                        use_atm_func=isoc_atm_func)
+        self.pop_isochrone = isoc_interp_params.isoc_mist_stellar_params(
+            age=isoc_age, met=isoc_met,
+            use_atm_func=isoc_atm_func,
+            phase=isoc_phase,
+            ext_Ks=isoc_ext_Ks,
+            dist=isoc_dist * u.pc,
+            filts_list=isoc_filts_list,
+            ext_law='NL18',
+        )
         
         # Also set population extinction based on isochrone extinction
         ## Filter properties
         lambda_Ks = 2.18e-6 * u.m
         dlambda_Ks = 0.35e-6 * u.m
-
-        lambda_Kp = 2.124e-6 * u.m
-        dlambda_Kp = 0.351e-6 * u.m
-
-        lambda_H = 1.633e-6 * u.m
-        dlambda_H = 0.296e-6 * u.m
+        
+        self.filt_lambdas = []
+        self.filt_dlambdas = []
+        
+        for filt in self.isoc_filts_list:
+            self.filt_lambdas.append(filt.lambda_filt)
+            self.filt_dlambdas.append(filt.dlambda_filt)
         
         ## Calculate default population extinction
-        self.ext_Kp = isoc_ext_Ks * (lambda_Ks / lambda_Kp)**self.ext_alpha
-        self.ext_H = isoc_ext_Ks * (lambda_Ks / lambda_H)**self.ext_alpha
+        self.isoc_filt_exts = np.empty(len(self.isoc_filts_list))
+        
+        for filt_index, filt in enumerate(self.isoc_filts_list):
+            self.isoc_filt_exts[filt_index] = isoc_ext_Ks *\
+                (lambda_Ks / filt_lambdas[filt_index])**self.ext_alpha
         
     
     def save_obs_times(self, obs_times_Kp, obs_times_H):
         self.obs_times_Kp = obs_times_Kp
         self.obs_times_H = obs_times_H
+        
+        self.obs_times = np.concatenate(
+            (obs_times_Kp, obs_times_H),
+        )
+        
+        self.obs_filts = np.concatenate((
+            np.full(len(obs_times_Kp), kp_filt),
+            np.full(len(obs_times_H), h_filt),
+        ),)
+        
+        self.obs_types = np.concatenate((
+            np.full(len(obs_times_Kp), 'phot'),
+            np.full(len(obs_times_H), 'phot'),
+        ),)
+        
+        
+        # Set up a phitter model observables object,
+        # which only contains times and types of observations
+        self.model_observables = observables.observables(
+            obs_times=self.obs_times,
+            obs_filts=self.obs_filts, obs_types=self.obs_types,
+        )
     
     def set_extLaw_alpha(self, ext_alpha=2.30):
         self.ext_alpha = ext_alpha
@@ -117,22 +158,24 @@ class binary_pop_light_curves(object):
                 '{0}/binary_{1}_mags_H.h5'.format(
                     out_dir + '/model_light_curves', int(binary_index))):
             return
-
         
         # print(binary_index)
-        
+
         # Interpolate stellar parameters from isochrone
-        (star1_params_all,
-         star1_params_lcfit) = self.pop_isochrone.mass_init_interp(mass_1)
-        (star2_params_all,
-         star2_params_lcfit) = self.pop_isochrone.mass_init_interp(mass_2)
+        star1_params = self.pop_isochrone.interp_star_params_mass_init(mass_1)
+        star2_params = self.pop_isochrone.interp_star_params_mass_init(mass_2)
         
         # Set up binary parameters
-        binary_inc = binary_inc * u.deg
-        t0 = (np.min(self.obs_times_Kp) - binary_period + binary_t0_shift)
-        
-        binary_params_model = (binary_period * u.d, binary_ecc, binary_inc, t0)
-        binary_params = (binary_period * u.d, binary_ecc, binary_inc, t0)
+        bin_params = binary_params.binary_params(
+            period = binary_period * u.d,
+            ecc = binary_ecc,
+            inc = binary_inc * u.deg,
+            t0 = (np.min(self.obs_times_Kp) - binary_period + binary_t0_shift),
+        )
+        # Pick a random argument of periapse
+        bin_params.arg_per0 = np.random.uniform(
+            low=0.0, high=360.0,
+        ) * u.deg
         
         # Set up model times
         model_phases_Kp = np.linspace(0.0, 1.0,
@@ -145,7 +188,31 @@ class binary_pop_light_curves(object):
         model_times_Kp = (model_phases_Kp * binary_period)
         model_times_H = (model_phases_H * binary_period)
         
-        model_times = (model_times_Kp, model_times_H)
+        model_times = np.concatenate(
+            (model_times_Kp, model_times_H),
+        )
+        
+        obs_filts = np.concatenate((
+            np.full(len(model_times_Kp), kp_filt),
+            np.full(len(model_times_H), h_filt),
+        ),)
+        
+        obs_types = np.concatenate((
+            np.full(len(model_times_Kp), 'phot'),
+            np.full(len(model_times_H), 'phot'),
+        ),)
+        
+        model_observables = observables.observables(
+            obs_times=model_times,
+            obs_filts=obs_filts, obs_types=obs_types,
+        )
+        
+        # Set up a binary model object
+        binary_model_obj = model_obs_calc.binary_star_model_obs(
+            model_observables,
+            use_blackbody_atm=use_blackbody_atm,
+            print_diagnostics=False,
+        )
         
         # Obtain model magnitudes
         model_success = True
@@ -154,20 +221,28 @@ class binary_pop_light_curves(object):
         binary_model_mags_H = np.empty(num_phase_points)
         
         num_triangles = 500
-        binary_model_out = lc_calc.binary_mags_calc(
-            star1_params_lcfit,
-            star2_params_lcfit,
-            binary_params_model,
-            model_times,
-            self.isoc_ext,
-            self.ext_Kp, self.ext_H,
-            self.ext_alpha,
-            self.isoc_dist * u.pc,
-            self.pop_distance,
-            use_blackbody_atm=use_blackbody_atm,
-            num_triangles=num_triangles)
+        modeled_observables = binary_model_obj.compute_obs(
+            star1_params, star2_params, bin_params,
+            num_triangles=num_triangles,
+        )
         
-        if binary_model_out == -np.inf:
+        # Add distance modulus
+        modeled_observables = phot_adj_calc.apply_distance_modulus(
+            modeled_observables,
+            self.isoc_dist*u.pc,
+        )
+        
+        # Apply reddening from extinction
+        modeled_observables = phot_adj_calc.apply_extinction(
+            modeled_observables,
+            isoc_Ks_ext=isoc_ext,
+            ref_filt=kp_filt,
+            target_ref_filt_ext=self.ext_Kp,
+            isoc_red_law='NL18',
+            ext_alpha=self.ext_alpha,
+        )
+        
+        if np.isnan(modeled_observables.obs_times[0]):
             model_success = False
             (binary_model_mags_Kp, binary_model_mags_H) = ([-1], [-1])
         else:
