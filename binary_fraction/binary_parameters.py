@@ -8,7 +8,7 @@ import os
 import numpy as np
 from astropy.table import Table
 from binary_fraction import imf
-from binary_fraction.distributions import (power_law_dist, cos_inc_dist)
+from binary_fraction.distributions import (power_law_dist, cos_inc_dist, log_norm_unimodal)
 
 class binary_population(object):
     def  __init__(self):
@@ -30,6 +30,14 @@ class binary_population(object):
         self.period_dist = power_law_dist(limits=period_limits, pl_exp=pl_exp)
         return
     
+    def make_period_dist_log_norm_unimodal(
+            self, mode_logp=5, sigma_logp=1,
+        ):
+        self.period_dist = log_norm_unimodal(
+            log_mode=mode_logp, log_sigma=sigma_logp,
+        )
+        return
+    
     def make_q_dist(self, q_limits=np.array([0.1, 1.]), pl_exp=-0.1):
         self.q_dist = power_law_dist(limits=q_limits, pl_exp=pl_exp)
         return
@@ -42,7 +50,7 @@ class binary_population(object):
         self.inc_dist = cos_inc_dist()
     
     # Function to generate binary parameters
-    def generate_binary_params(self, print_diagnostics=False):
+    def generate_binary_params(self, print_diagnostics=False, log_per_max=None):
         ## Primary star mass
         mass_1 = self.draw_mass_imf()
         
@@ -52,6 +60,8 @@ class binary_population(object):
         
         ## Binary period
         binary_period = self.draw_period()
+        if log_per_max != None:
+            binary_period = self.draw_period(max_log_draw=log_per_max)
         binary_t0_shift = self.draw_t0_shift(binary_period)
         
         ## Binary eccentricity
@@ -83,8 +93,11 @@ class binary_population(object):
     def draw_mass_imf(self):
         return self.imf.draw_imf_mass()
     
-    def draw_period(self):
-        return self.period_dist.draw()
+    def draw_period(self, max_log_draw=None):
+        if max_log_draw != None:
+            return self.period_dist.draw(max_log_draw=max_log_draw)
+        else:
+            return self.period_dist.draw()
     
     def draw_t0_shift(self, binary_period):
         return binary_period * np.random.rand()
@@ -101,7 +114,9 @@ class binary_population(object):
 
 def generate_binary_population_params(
         binary_population, num_binaries,
-        out_dir='./mock_binaries'):
+        out_dir='./mock_binaries',
+        log_per_max=None,
+    ):
     # Make sure output directory exists
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -113,7 +128,7 @@ def generate_binary_population_params(
     
     # Draw binary parameters
     for cur_binary_index in range(num_binaries):
-        cur_binary_params = binary_population.generate_binary_params()
+        cur_binary_params = binary_population.generate_binary_params(log_per_max=log_per_max)
         (mass_1, mass_2,
          binary_period, binary_t0_shift,
          binary_q, binary_ecc, binary_inc) = cur_binary_params

@@ -4,7 +4,7 @@
 # ---
 # Abhimat Gautam
 
-__all__ = ['power_law_dist', 'cos_inc_dist']
+__all__ = ['power_law_dist', 'cos_inc_dist', 'lognorm_unimodal']
 
 import numpy as np
 
@@ -62,3 +62,23 @@ class cos_inc_dist(object):
         cos_i_draw = (2. * np.random.sample()) - 1.
         
         return np.rad2deg(np.arccos(cos_i_draw))
+
+class log_norm_unimodal(object):
+    def __init__(self, log_mode=0.0, log_sigma=1.0, log_base=10.):
+        # Save out parameters
+        self.log_mode = log_mode
+        self.log_sigma = log_sigma
+        self.log_base = log_base
+        
+        self.rng = np.random.default_rng()
+    
+    def draw(self, max_log_draw=None):
+        log_draw = self.rng.normal(self.log_mode, self.log_sigma)
+        
+        if max_log_draw != None:
+            while log_draw > max_log_draw:
+                log_draw = self.rng.normal(self.log_mode, self.log_sigma)
+        
+        draw = self.log_base**log_draw
+        
+        return draw
