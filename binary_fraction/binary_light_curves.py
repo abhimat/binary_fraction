@@ -21,6 +21,7 @@ def binary_light_curve_from_binary_row(
         cur_binary_row, bin_pop_lc_obj,
         out_dir,
         use_blackbody_atm=False,
+        skip_txt_out=True
     ):
     bin_pop_lc_obj.make_binary_light_curve(
         cur_binary_row['binary_index'],
@@ -30,6 +31,7 @@ def binary_light_curve_from_binary_row(
         cur_binary_row['binary_inc'],
         use_blackbody_atm=use_blackbody_atm,
         out_dir=out_dir,
+        skip_txt_out=skip_txt_out,
     )
 
 # Default filters
@@ -91,7 +93,7 @@ class binary_pop_light_curves(object):
         
         for filt_index, filt in enumerate(self.isoc_filts_list):
             self.isoc_filt_exts[filt_index] = isoc_ext_Ks *\
-                (lambda_Ks / filt_lambdas[filt_index])**self.ext_alpha
+                (lambda_Ks / self.filt_lambdas[filt_index])**self.ext_alpha
         
     
     def save_obs_times(self, obs_times_Kp, obs_times_H):
@@ -226,27 +228,32 @@ class binary_pop_light_curves(object):
             num_triangles=num_triangles,
         )
         
-        # Add distance modulus
-        modeled_observables = phot_adj_calc.apply_distance_modulus(
-            modeled_observables,
-            self.isoc_dist*u.pc,
-        )
-        
-        # Apply reddening from extinction
-        modeled_observables = phot_adj_calc.apply_extinction(
-            modeled_observables,
-            isoc_Ks_ext=isoc_ext,
-            ref_filt=kp_filt,
-            target_ref_filt_ext=self.ext_Kp,
-            isoc_red_law='NL18',
-            ext_alpha=self.ext_alpha,
-        )
-        
         if np.isnan(modeled_observables.obs_times[0]):
             model_success = False
             (binary_model_mags_Kp, binary_model_mags_H) = ([-1], [-1])
         else:
-            (binary_model_mags_Kp, binary_model_mags_H) = binary_model_out
+            # Add distance modulus
+            modeled_observables = phot_adj_calc.apply_distance_modulus(
+                modeled_observables,
+                self.isoc_dist*u.pc,
+            )
+        
+            # Apply reddening from extinction
+            modeled_observables = phot_adj_calc.apply_extinction(
+                modeled_observables,
+                isoc_Ks_ext=self.isoc_ext,
+                ref_filt=kp_filt,
+                target_ref_filt_ext=self.ext_Kp,
+                isoc_red_law='NL18',
+                ext_alpha=self.ext_alpha,
+            )
+            
+            binary_model_mags_Kp = modeled_observables.obs[
+                modeled_observables.phot_filt_filters[kp_filt],
+            ][0]
+            binary_model_mags_H = modeled_observables.obs[
+                modeled_observables.phot_filt_filters[h_filt],
+            ][0]
             
         
         # Save out binary light curve
@@ -346,7 +353,9 @@ class binary_pop_light_curves(object):
             use_blackbody_atm=False,
             out_dir='./mock_binaries',
             parallelize=True,
-            par_processes=32, par_chunksize=10):
+            par_processes=32, par_chunksize=10,
+            skip_txt_out=True,
+        ):
         # Read in table of binary parameters
         if binary_pop_params_file.endswith('.h5'):
             binary_pop_params_table = Table.read(
@@ -363,6 +372,7 @@ class binary_pop_light_curves(object):
         parmap.map(
             binary_light_curve_from_binary_row, binary_pop_params_table,
             self, use_blackbody_atm=use_blackbody_atm, out_dir=out_dir,
+            skip_txt_out=skip_txt_out,
             pm_pbar=True, pm_parallel=parallelize,
             pm_processes=par_processes,
             pm_chunksize=par_chunksize,

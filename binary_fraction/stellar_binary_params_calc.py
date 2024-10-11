@@ -8,11 +8,16 @@ import os
 import numpy as np
 from binary_fraction import imf
 from astropy.table import Table
-from phitter import isoc_interp, lc_calc
+from phitter import observables, filters
+from phitter.params import star_params, binary_params, isoc_interp_params
 from phoebe import u
 from phoebe import c as const
 import parmap
 from tqdm import tqdm
+
+# Default filters
+kp_filt = filters.nirc2_kp_filt()
+h_filt = filters.nirc2_h_filt()
 
 # Function to help with parallelization
 def params_from_binary_row(cur_binary_row, s_b_params_calc_obj):
@@ -41,40 +46,53 @@ class stellar_binary_params_calc(object):
     def set_pop_distance(self, pop_distance=7.971e3):
         self.pop_distance = pop_distance
     
-    def make_pop_isochrone(self,
-                           isoc_age=4.0e6, isoc_ext_Ks=2.54,
-                           isoc_dist=7.971e3, isoc_phase=None,
-                           isoc_met=0.0,
-                           isoc_atm_func = 'merged'):
+    def make_pop_isochrone(
+            self,
+            isoc_age=4.0e6, isoc_ext_Ks=2.54,
+            isoc_dist=7.971e3, isoc_phase=None,
+            isoc_met=0.0,
+            isoc_atm_func = 'merged',
+            isoc_filts_list=[
+                kp_filt, h_filt,
+            ],
+        ):
         # Store out isochrone parameters into object
         self.isoc_age=isoc_age,
         self.isoc_ext=isoc_ext_Ks,
         self.isoc_dist=isoc_dist,
         self.isoc_phase=isoc_phase,
         self.isoc_met=isoc_met
+        self.isoc_filts_list=isoc_filts_list
         
         # Generate isoc_interp object
-        self.pop_isochrone = isoc_interp.isochrone_mist(age=isoc_age,
-                                                        ext=isoc_ext_Ks,
-                                                        dist=isoc_dist,
-                                                        phase=isoc_phase,
-                                                        met=isoc_met,
-                                                        use_atm_func=isoc_atm_func)
+        self.pop_isochrone = isoc_interp_params.isoc_mist_stellar_params(
+            age=isoc_age, met=isoc_met,
+            use_atm_func=isoc_atm_func,
+            phase=isoc_phase,
+            ext_Ks=isoc_ext_Ks,
+            dist=isoc_dist * u.pc,
+            filts_list=isoc_filts_list,
+            ext_law='NL18',
+        )
         
         # Also set population extinction based on isochrone extinction
         ## Filter properties
         lambda_Ks = 2.18e-6 * u.m
         dlambda_Ks = 0.35e-6 * u.m
-
-        lambda_Kp = 2.124e-6 * u.m
-        dlambda_Kp = 0.351e-6 * u.m
-
-        lambda_H = 1.633e-6 * u.m
-        dlambda_H = 0.296e-6 * u.m
+        
+        self.filt_lambdas = []
+        self.filt_dlambdas = []
+        
+        for filt in self.isoc_filts_list:
+            self.filt_lambdas.append(filt.lambda_filt)
+            self.filt_dlambdas.append(filt.dlambda_filt)
         
         ## Calculate default population extinction
-        self.ext_Kp = isoc_ext_Ks * (lambda_Ks / lambda_Kp)**self.ext_alpha
-        self.ext_H = isoc_ext_Ks * (lambda_Ks / lambda_H)**self.ext_alpha
+        self.isoc_filt_exts = np.empty(len(self.isoc_filts_list))
+        
+        for filt_index, filt in enumerate(self.isoc_filts_list):
+            self.isoc_filt_exts[filt_index] = isoc_ext_Ks *\
+                (lambda_Ks / self.filt_lambdas[filt_index])**self.ext_alpha
     
     
     def calc_stellar_binary_params(
@@ -85,15 +103,26 @@ class stellar_binary_params_calc(object):
         binary system
         """
         # Interpolate stellar parameters from isochrone
-        (star1_params_all, star1_params_lcfit) = self.pop_isochrone.mass_init_interp(mass_1)
-        (star2_params_all, star2_params_lcfit) = self.pop_isochrone.mass_init_interp(mass_2)
+        star1_params = self.pop_isochrone.interp_star_params_mass_init(mass_1)
+        star2_params = self.pop_isochrone.interp_star_params_mass_init(mass_2)
         
-        (star1_mass_init, star1_mass, star1_rad, star1_lum,
-            star1_teff, star1_logg,
-            star1_mags, star1_pblums) = star1_params_all
-        (star2_mass_init, star2_mass, star2_rad, star2_lum,
-            star2_teff, star2_logg,
-            star2_mags, star2_pblums) = star2_params_all
+        star1_mass_init = star1_params.mass_init
+        star1_mass = star1_params.mass
+        star1_rad = star1_params.rad
+        star1_lum = star1_params.lum
+        star1_teff = star1_params.teff
+        star1_logg = star1_params.logg
+        star1_mags = star1_params.mags
+        star1_pblums = star1_params.pblums
+        
+        star2_mass_init = star2_params.mass_init
+        star2_mass = star2_params.mass
+        star2_rad = star2_params.rad
+        star2_lum = star2_params.lum
+        star2_teff = star2_params.teff
+        star2_logg = star2_params.logg
+        star2_mags = star2_params.mags
+        star2_pblums = star2_params.pblums
         
         star1_den = star1_mass / ((4./3.) * np.pi * star1_rad**3.)
         star2_den = star2_mass / ((4./3.) * np.pi * star2_rad**3.)
